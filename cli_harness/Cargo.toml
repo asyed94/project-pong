@@ -1,0 +1,14 @@
+[package]
+name = "cli_harness"
+version = "0.1.0"
+edition = "2021"
+description = "CLI testing harness for pong_core"
+
+[dependencies]
+pong_core = { path = "../pong_core" }
+crossterm = "0.27"
+ctrlc = "3.4"
+
+[[bin]]
+name = "cli_harness"
+path = "src/main.rs"

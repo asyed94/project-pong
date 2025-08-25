@@ -1,0 +1,13 @@
+[package]
+name = "pong_core"
+version = "0.1.0"
+edition = "2021"
+description = "Deterministic Pong game engine with fixed-point physics"
+license = "MIT"
+
+[dependencies]
+# No external dependencies - pure Rust for determinism
+
+[lib]
+name = "pong_core"
+crate-type = ["lib"]

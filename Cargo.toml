@@ -1,0 +1,9 @@
+[workspace]
+members = [
+    "pong_core",
+    "cli_harness"
+]
+resolver = "2"
+
+[workspace.dependencies]
+# Shared dependencies can be defined here
