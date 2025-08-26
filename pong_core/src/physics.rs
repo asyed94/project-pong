@@ -8,12 +8,13 @@ pub struct Physics;
 impl Physics {
     /// Update paddle position based on input and constraints
     pub fn update_paddle(paddle: &mut Paddle, input: &Input, config: &Config) {
-        // Convert input axis to velocity
+        // Convert input axis to velocity with proper fixed-point math
         let target_velocity = if input.axis_y == 0 {
             0
         } else {
-            // Convert [-127, 127] to fixed-point [-1.0, 1.0], then scale by paddle_speed
-            let normalized_input = (input.axis_y as i32 * FX_ONE) / 127;
+            // Clamp input to prevent -128 overflow and normalize properly
+            let clamped_input = input.axis_y.clamp(-127, 127);
+            let normalized_input = fx::from_f32(clamped_input as f32 / 127.0);
             fx::mul_fx(normalized_input, config.paddle_speed)
         };
 
@@ -63,62 +64,53 @@ impl Physics {
             Side::Right => FX_ONE - config.paddle_x,
         };
 
-        // Simple rectangular collision detection using proper fixed-point math
-        let ball_radius = fx::div_fx(config.ball_speed, 60 * FX_ONE); // Small radius based on speed
+        // Use fixed collision geometry for consistent detection
+        let ball_radius = config.ball_radius;
+        let paddle_half_width = config.paddle_width / 2;
         let paddle_half_h = config.paddle_half_h;
 
+        // Calculate ball bounds
         let ball_left = ball.pos.x - ball_radius;
         let ball_right = ball.pos.x + ball_radius;
         let ball_top = ball.pos.y - ball_radius;
         let ball_bottom = ball.pos.y + ball_radius;
 
-        let paddle_left = paddle_x - ball_radius;
-        let paddle_right = paddle_x + ball_radius;
+        // Calculate paddle bounds (fixed - no ball radius contamination)
+        let paddle_left = paddle_x - paddle_half_width;
+        let paddle_right = paddle_x + paddle_half_width;
         let paddle_top = paddle.y - paddle_half_h;
         let paddle_bottom = paddle.y + paddle_half_h;
 
-        // Check if ball overlaps with paddle
+        // Check for overlap using clean bounds logic
         if ball_right >= paddle_left
             && ball_left <= paddle_right
             && ball_bottom >= paddle_top
             && ball_top <= paddle_bottom
         {
-            // Collision detected - reflect ball
-            match side {
-                Side::Left => {
-                    if ball.vel.x < 0 {
-                        // Only reflect if moving toward paddle
-                        ball.vel.x = -ball.vel.x;
-                        ball.pos.x = paddle_right + ball_radius; // Push ball away
+            let moving_toward_paddle = match side {
+                Side::Left => ball.vel.x < 0,
+                Side::Right => ball.vel.x > 0,
+            };
 
-                        // Add paddle velocity influence using proper fixed-point division
-                        let velocity_influence = fx::div_fx(paddle.vy, 4 * FX_ONE); // Reduce influence
-                        ball.vel.y += velocity_influence;
+            if moving_toward_paddle {
+                // Reflect ball velocity
+                ball.vel.x = -ball.vel.x;
 
-                        // Speed up ball
-                        ball.vel.x = fx::mul_fx(ball.vel.x, config.ball_speed_up);
-                        ball.vel.y = fx::mul_fx(ball.vel.y, config.ball_speed_up);
-
-                        return true;
-                    }
+                // Position ball outside paddle bounds using correct geometry
+                match side {
+                    Side::Left => ball.pos.x = paddle_right + ball_radius,
+                    Side::Right => ball.pos.x = paddle_left - ball_radius,
                 }
-                Side::Right => {
-                    if ball.vel.x > 0 {
-                        // Only reflect if moving toward paddle
-                        ball.vel.x = -ball.vel.x;
-                        ball.pos.x = paddle_left - ball_radius; // Push ball away
 
-                        // Add paddle velocity influence using proper fixed-point division
-                        let velocity_influence = fx::div_fx(paddle.vy, 4 * FX_ONE); // Reduce influence
-                        ball.vel.y += velocity_influence;
+                // Add paddle velocity influence
+                let velocity_influence = fx::div_fx(paddle.vy, 4 * FX_ONE);
+                ball.vel.y += velocity_influence;
 
-                        // Speed up ball
-                        ball.vel.x = fx::mul_fx(ball.vel.x, config.ball_speed_up);
-                        ball.vel.y = fx::mul_fx(ball.vel.y, config.ball_speed_up);
+                // Apply speed up
+                ball.vel.x = fx::mul_fx(ball.vel.x, config.ball_speed_up);
+                ball.vel.y = fx::mul_fx(ball.vel.y, config.ball_speed_up);
 
-                        return true;
-                    }
-                }
+                return true;
             }
         }
 
@@ -162,16 +154,27 @@ impl Physics {
 
     /// Limit ball speed to prevent runaway velocity
     pub fn limit_ball_speed(ball: &mut Ball, max_speed: Fx) {
-        let speed_squared = fx::mul_fx(ball.vel.x, ball.vel.x) + fx::mul_fx(ball.vel.y, ball.vel.y);
+        // Use i64 to prevent overflow in speed calculation
+        let vel_x_i64 = ball.vel.x as i64;
+        let vel_y_i64 = ball.vel.y as i64;
+        let speed_squared_i64 = (vel_x_i64 * vel_x_i64 + vel_y_i64 * vel_y_i64) >> 16;
+        let speed_squared = speed_squared_i64 as Fx;
+
         let max_speed_squared = fx::mul_fx(max_speed, max_speed);
 
         if speed_squared > max_speed_squared {
-            // Calculate current speed
+            // Calculate current speed with zero-division protection
             let current_speed = Self::sqrt_fx(speed_squared);
-            let scale = fx::div_fx(max_speed, current_speed);
 
-            ball.vel.x = fx::mul_fx(ball.vel.x, scale);
-            ball.vel.y = fx::mul_fx(ball.vel.y, scale);
+            if current_speed > 0 {
+                let scale = fx::div_fx(max_speed, current_speed);
+                ball.vel.x = fx::mul_fx(ball.vel.x, scale);
+                ball.vel.y = fx::mul_fx(ball.vel.y, scale);
+            } else {
+                // Fallback: if speed calculation failed, clamp directly
+                ball.vel.x = ball.vel.x.clamp(-max_speed, max_speed);
+                ball.vel.y = ball.vel.y.clamp(-max_speed, max_speed);
+            }
         }
     }
 
@@ -184,11 +187,11 @@ impl Physics {
         let mut x = value;
         let mut prev_x;
 
-        // Newton's method: x_new = (x + value/x) / 2
+        // Newton's method: x_new = (x + value/x) / 2 using proper fixed-point division
         for _ in 0..10 {
             // Limit iterations
             prev_x = x;
-            x = (x + fx::div_fx(value, x)) / 2;
+            x = fx::div_fx(x + fx::div_fx(value, x), 2 * FX_ONE);
 
             // Check for convergence
             if fx::abs_fx(x - prev_x) < 16 {

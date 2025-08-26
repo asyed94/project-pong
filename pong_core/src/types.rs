@@ -62,20 +62,26 @@ pub struct Config {
     pub seed: u64,
     /// Tick frequency (Hz)
     pub tick_hz: u16,
+    /// Fixed ball collision radius
+    pub ball_radius: Fx,
+    /// Paddle width for collision detection
+    pub paddle_width: Fx,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Config {
-            paddle_half_h: FX_ONE / 8,             // 1/8 unit
-            paddle_speed: (FX_ONE * 3) / 2,        // 1.5 units/s
-            ball_speed: FX_ONE / 2,                // 0.5 units/s
+            paddle_half_h: FX_ONE / 8,             // 1/8 unit = 8192 (exact)
+            paddle_speed: (FX_ONE * 3) / 2,        // 1.5 units/s = 98304 (exact)
+            ball_speed: FX_ONE / 2,                // 0.5 units/s = 32768 (exact)
             ball_speed_up: FX_ONE + (FX_ONE / 20), // +5% per hit
             wall_thickness: 0,
-            paddle_x: FX_ONE / 20, // 5% from edge
+            paddle_x: fx::from_f32(0.05), // 5% from edge (precise conversion)
             max_score: 11,
             seed: 0xC0FFEE,
             tick_hz: 60,
+            ball_radius: fx::from_f32(1.0 / 32.0), // Precise small ball radius
+            paddle_width: fx::from_f32(0.025),     // 2.5% width (precise conversion)
         }
     }
 }
@@ -186,16 +192,160 @@ pub struct Snapshot {
     pub rng: u64,
 }
 
-/// View data for rendering (normalized coordinates)
+/// Screen rectangle for pre-computed rendering coordinates
+#[derive(Debug, Copy, Clone)]
+pub struct ScreenRect {
+    pub left: usize,
+    pub right: usize,
+    pub top: usize,
+    pub bottom: usize,
+}
+
+impl ScreenRect {
+    pub fn new(left: usize, right: usize, top: usize, bottom: usize) -> Self {
+        ScreenRect {
+            left,
+            right,
+            top,
+            bottom,
+        }
+    }
+}
+
+/// Pure physics view - client agnostic game state
 #[derive(Debug, Copy, Clone)]
 pub struct View {
     pub tick: Tick,
     pub status: Status,
-    pub left_y: Fx,        // Left paddle center Y
-    pub right_y: Fx,       // Right paddle center Y
-    pub paddle_half_h: Fx, // Half-height of paddles
-    pub ball_pos: Vec2,    // Ball position
-    pub score: [u8; 2],    // [left, right] scores
+    pub score: [u8; 2], // [left, right] scores
+
+    // Pure physics data (no screen coordinates)
+    pub left_paddle_y: Fx,
+    pub right_paddle_y: Fx,
+    pub paddle_half_h: Fx,
+    pub ball_pos: Vec2,
+    pub paddle_x_offset: Fx, // Distance from edge
+    pub paddle_width: Fx,
+    pub ball_radius: Fx,
+}
+
+/// Pixel-perfect rendering helper for consistent paddle heights
+pub struct RenderHelper {
+    field_width: usize,
+    field_height: usize,
+    paddle_height_pixels: usize, // Fixed height in pixels - calculated once
+    paddle_width_pixels: usize,  // Fixed width in pixels - calculated once
+}
+
+impl RenderHelper {
+    /// Create a new render helper with fixed paddle dimensions
+    pub fn new(field_width: usize, field_height: usize, config: &Config) -> Self {
+        // Calculate fixed paddle height in pixels (independent of position)
+        let paddle_height_ratio = fx::to_f32(config.paddle_half_h) * 2.0; // Full height ratio
+        let paddle_height_pixels = ((paddle_height_ratio * field_height as f32).max(2.0).round()
+            as usize)
+            .max(2) // Ensure minimum 2 pixels
+            .min(field_height / 3); // Ensure reasonable maximum
+
+        // Calculate fixed paddle width in pixels
+        let paddle_width_ratio = fx::to_f32(config.paddle_width);
+        let paddle_width_pixels = ((paddle_width_ratio * field_width as f32).max(1.0).round()
+            as usize)
+            .max(1) // Ensure minimum 1 pixel
+            .min(field_width / 10); // Ensure reasonable maximum
+
+        RenderHelper {
+            field_width,
+            field_height,
+            paddle_height_pixels,
+            paddle_width_pixels,
+        }
+    }
+
+    /// Convert physics Y coordinate to screen Y coordinate
+    pub fn physics_to_screen_y(&self, physics_y: Fx) -> usize {
+        let clamped = fx::clamp_fx(physics_y, 0, FX_ONE);
+        let normalized = fx::to_f32(clamped);
+        // Y-axis inversion for screen coordinates
+        let screen_coord = (1.0 - normalized) * (self.field_height - 1) as f32;
+        (screen_coord + 0.5) as usize // Round to nearest pixel
+    }
+
+    /// Convert physics X coordinate to screen X coordinate
+    pub fn physics_to_screen_x(&self, physics_x: Fx) -> usize {
+        let clamped = fx::clamp_fx(physics_x, 0, FX_ONE);
+        let normalized = fx::to_f32(clamped);
+        let screen_coord = normalized * (self.field_width - 1) as f32;
+        (screen_coord + 0.5) as usize // Round to nearest pixel
+    }
+
+    /// Get paddle rectangle with PERFECT consistent height - ALWAYS same height
+    pub fn get_paddle_rect(&self, paddle_y: Fx, side: Side) -> ScreenRect {
+        // Calculate paddle center in screen coordinates
+        let center_y = self.physics_to_screen_y(paddle_y);
+
+        // ABSOLUTELY guaranteed consistent height - never changes for any reason
+        let half_height = self.paddle_height_pixels / 2;
+
+        // Always use exact same top/bottom calculation
+        // If this goes off-screen, so be it - consistency is more important
+        let top = center_y.saturating_sub(half_height);
+        let bottom = top + self.paddle_height_pixels - 1; // Always exactly paddle_height_pixels tall
+
+        // Ensure we stay within bounds without changing height
+        let (final_top, final_bottom) = if bottom >= self.field_height {
+            // Slide the entire paddle up to fit, maintaining exact height
+            let final_bottom = self.field_height - 1;
+            let final_top = final_bottom - self.paddle_height_pixels + 1;
+            (final_top, final_bottom)
+        } else if top == 0 {
+            // Already at top, height is correct
+            (top, bottom)
+        } else {
+            // Normal case - paddle fits perfectly
+            (top, bottom)
+        };
+
+        // Verify height is always consistent (debug assertion)
+        debug_assert_eq!(
+            final_bottom - final_top + 1,
+            self.paddle_height_pixels,
+            "Paddle height inconsistency! Expected {}, got {}",
+            self.paddle_height_pixels,
+            final_bottom - final_top + 1
+        );
+
+        // Calculate X position
+        let paddle_x_physics = match side {
+            Side::Left => fx::mul_fx(FX_ONE, fx::from_f32(0.05)), // 5% from left edge
+            Side::Right => FX_ONE - fx::mul_fx(FX_ONE, fx::from_f32(0.05)), // 5% from right edge
+        };
+
+        let center_x = self.physics_to_screen_x(paddle_x_physics);
+        let half_width = self.paddle_width_pixels / 2;
+        let left = center_x.saturating_sub(half_width);
+        let right = (center_x + half_width).min(self.field_width.saturating_sub(1));
+
+        ScreenRect::new(left, right, final_top, final_bottom)
+    }
+
+    /// Get ball position in screen coordinates
+    pub fn get_ball_position(&self, ball_pos: Vec2) -> (usize, usize) {
+        (
+            self.physics_to_screen_x(ball_pos.x),
+            self.physics_to_screen_y(ball_pos.y),
+        )
+    }
+
+    /// Get the fixed paddle height in pixels (always consistent)
+    pub fn paddle_height_pixels(&self) -> usize {
+        self.paddle_height_pixels
+    }
+
+    /// Get field dimensions
+    pub fn field_dimensions(&self) -> (usize, usize) {
+        (self.field_width, self.field_height)
+    }
 }
 
 /// Game events that can occur during a tick

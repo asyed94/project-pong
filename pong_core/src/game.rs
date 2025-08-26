@@ -139,16 +139,21 @@ impl Game {
         event
     }
 
-    /// Generate a view of the current game state for rendering
+    /// Generate pure physics view (no screen coordinates)
     pub fn view(&self) -> View {
         View {
             tick: self.tick,
             status: self.status,
-            left_y: self.paddles[0].y,
-            right_y: self.paddles[1].y,
+            score: self.score,
+
+            // Pure physics data - client agnostic
+            left_paddle_y: self.paddles[0].y,
+            right_paddle_y: self.paddles[1].y,
             paddle_half_h: self.config.paddle_half_h,
             ball_pos: self.ball.pos,
-            score: self.score,
+            paddle_x_offset: self.config.paddle_x, // Distance from edge
+            paddle_width: self.config.paddle_width,
+            ball_radius: self.config.ball_radius,
         }
     }
 
@@ -382,11 +387,14 @@ mod tests {
 
         assert_eq!(view.tick, game.tick);
         assert_eq!(view.status, game.status);
-        assert_eq!(view.left_y, game.paddles[0].y);
-        assert_eq!(view.right_y, game.paddles[1].y);
+        assert_eq!(view.left_paddle_y, game.paddles[0].y);
+        assert_eq!(view.right_paddle_y, game.paddles[1].y);
         assert_eq!(view.paddle_half_h, game.config.paddle_half_h);
         assert_eq!(view.ball_pos, game.ball.pos);
         assert_eq!(view.score, game.score);
+        assert_eq!(view.paddle_x_offset, game.config.paddle_x);
+        assert_eq!(view.paddle_width, game.config.paddle_width);
+        assert_eq!(view.ball_radius, game.config.ball_radius);
     }
 
     #[test]

@@ -1,0 +1,14 @@
+[package]
+name = "terminal-client"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+pong_core = { path = "../../pong_core" }
+ratatui = "0.28"
+crossterm = "0.28"
+color-eyre = "0.6"
+
+[[bin]]
+name = "terminal-client"
+path = "src/main.rs"

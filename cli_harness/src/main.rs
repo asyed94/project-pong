@@ -458,9 +458,9 @@ impl CliApp {
             ((fx::to_f32(view.ball_pos.y).clamp(0.0, 1.0)) * (FIELD_HEIGHT - 1) as f32) as usize;
 
         let left_paddle_y =
-            ((fx::to_f32(view.left_y).clamp(0.0, 1.0)) * (FIELD_HEIGHT - 1) as f32) as usize;
-        let right_paddle_y =
-            ((fx::to_f32(view.right_y).clamp(0.0, 1.0)) * (FIELD_HEIGHT - 1) as f32) as usize;
+            ((fx::to_f32(view.left_paddle_y).clamp(0.0, 1.0)) * (FIELD_HEIGHT - 1) as f32) as usize;
+        let right_paddle_y = ((fx::to_f32(view.right_paddle_y).clamp(0.0, 1.0))
+            * (FIELD_HEIGHT - 1) as f32) as usize;
 
         let paddle_height = ((fx::to_f32(view.paddle_half_h) * 2.0) * FIELD_HEIGHT as f32) as usize;
         let paddle_half_h = paddle_height / 2;
@@ -616,8 +616,8 @@ impl CliApp {
                 "Ball vel: ({:.2}, {:.2}) | Paddle Y: L={:.2} R={:.2}",
                 fx::to_f32(self.game.ball.vel.x),
                 fx::to_f32(self.game.ball.vel.y),
-                fx::to_f32(view.left_y),
-                fx::to_f32(view.right_y)
+                fx::to_f32(view.left_paddle_y),
+                fx::to_f32(view.right_paddle_y)
             )),
             ResetColor
         )?;

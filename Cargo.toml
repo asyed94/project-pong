@@ -1,8 +1,5 @@
 [workspace]
-members = [
-    "pong_core",
-    "cli_harness"
-]
+members = ["pong_core", "cli_harness", "clients/terminal"]
 resolver = "2"
 
 [workspace.dependencies]
