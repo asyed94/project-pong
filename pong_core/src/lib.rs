@@ -1,9 +1,12 @@
 //! Pong core game engine - deterministic multiplayer pong implementation
 
 pub mod game;
+pub mod lockstep;
 pub mod physics;
 pub mod serialization;
+pub mod transport;
 pub mod types;
+pub mod wire_protocol;
 
 // WASM bridge module - only compiled when wasm feature is enabled
 #[cfg(feature = "wasm")]

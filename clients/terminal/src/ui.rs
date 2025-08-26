@@ -31,6 +31,8 @@ impl Widget for &App {
         // Render screen-specific content
         match self.screen {
             AppScreen::Start => self.render_start_screen(chunks[1], buf),
+            AppScreen::Host => self.render_host_screen(chunks[1], buf),
+            AppScreen::Join => self.render_join_screen(chunks[1], buf),
             AppScreen::Local => self.render_local_screen(chunks[1], buf),
             AppScreen::Game => self.render_game_screen(chunks[1], buf),
         }
@@ -63,6 +65,166 @@ impl App {
             .highlight_symbol("► ");
 
         list.render(area, buf);
+    }
+
+    fn render_host_screen(&self, area: Rect, buf: &mut Buffer) {
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Length(8), // Offer SDP display
+                Constraint::Length(6), // Answer SDP input
+                Constraint::Length(3), // Connection status
+                Constraint::Length(3), // Instructions
+            ])
+            .split(area);
+
+        // Display generated Offer SDP
+        let offer_widget = Paragraph::new(if self.menu_state.host_state.offer_sdp.is_empty() {
+            "Generating offer...".to_string()
+        } else {
+            format!(
+                "Offer SDP (copy this):\n\n{}",
+                self.menu_state
+                    .host_state
+                    .offer_sdp
+                    .chars()
+                    .take(200)
+                    .collect::<String>()
+                    + "..."
+            )
+        })
+        .style(Style::default().fg(Color::Green))
+        .block(
+            Block::bordered()
+                .border_type(BorderType::Rounded)
+                .title("Your Offer SDP")
+                .title_alignment(Alignment::Center),
+        )
+        .wrap(ratatui::widgets::Wrap { trim: true });
+        offer_widget.render(chunks[0], buf);
+
+        // Answer SDP input area
+        let answer_content = if self.menu_state.host_state.answer_input.is_empty() {
+            "Answer SDP from peer:\n\nPaste the Answer SDP here...".to_string()
+        } else {
+            let truncated = self
+                .menu_state
+                .host_state
+                .answer_input
+                .chars()
+                .take(100)
+                .collect::<String>();
+            format!("Answer SDP from peer:\n\n{}", truncated)
+        };
+
+        let answer_widget = Paragraph::new(answer_content)
+            .style(Style::default().fg(Color::Cyan))
+            .block(
+                Block::bordered()
+                    .border_type(BorderType::Rounded)
+                    .title("Peer's Answer SDP")
+                    .title_alignment(Alignment::Center),
+            );
+        answer_widget.render(chunks[1], buf);
+
+        // Connection status
+        let status_widget = Paragraph::new(self.menu_state.host_state.connection_status.clone())
+            .style(Style::default().fg(Color::Yellow))
+            .alignment(Alignment::Center)
+            .block(
+                Block::bordered()
+                    .border_type(BorderType::Rounded)
+                    .title("Status")
+                    .title_alignment(Alignment::Center),
+            );
+        status_widget.render(chunks[2], buf);
+
+        // Instructions
+        let instructions = "ESC: Back to menu   ENTER: Connect (when Answer SDP is provided)";
+        let instructions_widget = Paragraph::new(instructions)
+            .style(Style::default().fg(Color::DarkGray))
+            .alignment(Alignment::Center);
+        instructions_widget.render(chunks[3], buf);
+    }
+
+    fn render_join_screen(&self, area: Rect, buf: &mut Buffer) {
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Length(6), // Offer SDP input
+                Constraint::Length(8), // Answer SDP display
+                Constraint::Length(3), // Connection status
+                Constraint::Length(3), // Instructions
+            ])
+            .split(area);
+
+        // Offer SDP input area
+        let offer_content = if self.menu_state.join_state.offer_input.is_empty() {
+            "Offer SDP from host:\n\nPaste the Offer SDP here...".to_string()
+        } else {
+            let truncated = self
+                .menu_state
+                .join_state
+                .offer_input
+                .chars()
+                .take(100)
+                .collect::<String>();
+            format!("Offer SDP from host:\n\n{}", truncated)
+        };
+
+        let offer_widget = Paragraph::new(offer_content)
+            .style(Style::default().fg(Color::Cyan))
+            .block(
+                Block::bordered()
+                    .border_type(BorderType::Rounded)
+                    .title("Host's Offer SDP")
+                    .title_alignment(Alignment::Center),
+            );
+        offer_widget.render(chunks[0], buf);
+
+        // Display generated Answer SDP
+        let answer_widget = Paragraph::new(if self.menu_state.join_state.answer_sdp.is_empty() {
+            "Answer SDP will appear here after processing Offer...".to_string()
+        } else {
+            format!(
+                "Answer SDP (copy this):\n\n{}",
+                self.menu_state
+                    .join_state
+                    .answer_sdp
+                    .chars()
+                    .take(200)
+                    .collect::<String>()
+                    + "..."
+            )
+        })
+        .style(Style::default().fg(Color::Green))
+        .block(
+            Block::bordered()
+                .border_type(BorderType::Rounded)
+                .title("Your Answer SDP")
+                .title_alignment(Alignment::Center),
+        )
+        .wrap(ratatui::widgets::Wrap { trim: true });
+        answer_widget.render(chunks[1], buf);
+
+        // Connection status
+        let status_widget = Paragraph::new(self.menu_state.join_state.connection_status.clone())
+            .style(Style::default().fg(Color::Yellow))
+            .alignment(Alignment::Center)
+            .block(
+                Block::bordered()
+                    .border_type(BorderType::Rounded)
+                    .title("Status")
+                    .title_alignment(Alignment::Center),
+            );
+        status_widget.render(chunks[2], buf);
+
+        // Instructions
+        let instructions = "ESC: Back to menu   ENTER: Process Offer SDP";
+        let instructions_widget = Paragraph::new(instructions)
+            .style(Style::default().fg(Color::DarkGray))
+            .alignment(Alignment::Center);
+        instructions_widget.render(chunks[3], buf);
     }
 
     fn render_local_screen(&self, area: Rect, buf: &mut Buffer) {

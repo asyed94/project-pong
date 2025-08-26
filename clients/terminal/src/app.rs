@@ -1,5 +1,10 @@
 use crate::event::{AppEvent, Event, EventHandler};
-use pong_core::{Config, Game, Input, InputPair, Status};
+use crate::rtc_transport::{RtcTransport, RtcTransportBuilder, SdpMode};
+use pong_core::{
+    lockstep::{GameAdapter, Lockstep},
+    transport::Transport,
+    Config, Game, Input, InputPair, Side, Status,
+};
 use ratatui::{
     crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     DefaultTerminal,
@@ -230,6 +235,8 @@ impl InputSystem {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AppScreen {
     Start,
+    Host,
+    Join,
     Local,
     Game,
 }
@@ -245,6 +252,34 @@ pub enum LocalMode {
 pub struct MenuState {
     pub start_selected: usize,
     pub local_selected: usize,
+    pub host_state: HostState,
+    pub join_state: JoinState,
+}
+
+/// Host screen state for SDP exchange
+#[derive(Debug, Default)]
+pub struct HostState {
+    pub offer_sdp: String,
+    pub answer_input: String,
+    pub connection_status: String,
+    pub is_connecting: bool,
+}
+
+/// Join screen state for SDP exchange
+#[derive(Debug, Default)]
+pub struct JoinState {
+    pub offer_input: String,
+    pub answer_sdp: String,
+    pub connection_status: String,
+    pub is_connecting: bool,
+}
+
+/// Network game mode
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NetworkMode {
+    Local,
+    Hosting,
+    Joining,
 }
 
 /// Game board size constants
@@ -263,8 +298,12 @@ pub struct App {
     pub menu_state: MenuState,
     /// Local game mode
     pub local_mode: LocalMode,
-    /// Game instance
+    /// Network game mode
+    pub network_mode: NetworkMode,
+    /// Game instance (for local games)
     pub game: Option<Game>,
+    /// Lockstep instance (for networked games)
+    pub lockstep: Option<Lockstep<GameAdapter, RtcTransport>>,
     /// Input system (cli_harness style)
     pub input_system: InputSystem,
     /// Last game tick
@@ -291,7 +330,9 @@ impl App {
             screen: AppScreen::Start,
             menu_state: MenuState::default(),
             local_mode: LocalMode::VsLocal2,
+            network_mode: NetworkMode::Local,
             game: None,
+            lockstep: None,
             input_system,
             last_tick: Instant::now(),
             events,
@@ -342,7 +383,7 @@ impl App {
 
         // Screen-specific key handling
         match self.screen {
-            AppScreen::Start | AppScreen::Local => {
+            AppScreen::Start | AppScreen::Host | AppScreen::Join | AppScreen::Local => {
                 // Menu navigation - only on key press
                 if key_event.kind == KeyEventKind::Press {
                     match key_event.code {
@@ -350,10 +391,10 @@ impl App {
                         KeyCode::Down => self.events.send(AppEvent::MenuDown),
                         KeyCode::Enter => self.events.send(AppEvent::MenuSelect),
                         KeyCode::Esc => {
-                            if self.screen == AppScreen::Local {
-                                self.events.send(AppEvent::NavigateToStart);
-                            } else {
+                            if self.screen == AppScreen::Start {
                                 self.events.send(AppEvent::Quit);
+                            } else {
+                                self.events.send(AppEvent::NavigateToStart);
                             }
                         }
                         _ => {}
@@ -383,6 +424,8 @@ impl App {
         match app_event {
             AppEvent::Quit => self.quit(),
             AppEvent::NavigateToStart => self.navigate_to_start(),
+            AppEvent::NavigateToHost => self.navigate_to_host(),
+            AppEvent::NavigateToJoin => self.navigate_to_join(),
             AppEvent::NavigateToLocal => self.navigate_to_local(),
             AppEvent::NavigateToGame => self.navigate_to_game(),
             AppEvent::MenuUp => self.menu_up(),
@@ -430,6 +473,16 @@ impl App {
         self.screen = AppScreen::Start;
     }
 
+    fn navigate_to_host(&mut self) {
+        self.screen = AppScreen::Host;
+        self.start_hosting();
+    }
+
+    fn navigate_to_join(&mut self) {
+        self.screen = AppScreen::Join;
+        self.setup_join();
+    }
+
     fn navigate_to_local(&mut self) {
         self.screen = AppScreen::Local;
     }
@@ -443,8 +496,8 @@ impl App {
     fn menu_up(&mut self) {
         match self.screen {
             AppScreen::Start => {
-                self.menu_state.start_selected = (self.menu_state.start_selected + 2 - 1) % 2;
-                // Local, Quit
+                self.menu_state.start_selected = (self.menu_state.start_selected + 4 - 1) % 4;
+                // Host, Join, Local, Quit
             }
             AppScreen::Local => {
                 self.menu_state.local_selected = (self.menu_state.local_selected + 2 - 1) % 2;
@@ -457,8 +510,8 @@ impl App {
     fn menu_down(&mut self) {
         match self.screen {
             AppScreen::Start => {
-                self.menu_state.start_selected = (self.menu_state.start_selected + 1) % 2;
-                // Local, Quit
+                self.menu_state.start_selected = (self.menu_state.start_selected + 1) % 4;
+                // Host, Join, Local, Quit
             }
             AppScreen::Local => {
                 self.menu_state.local_selected = (self.menu_state.local_selected + 1) % 2;
@@ -472,8 +525,10 @@ impl App {
         match self.screen {
             AppScreen::Start => {
                 match self.menu_state.start_selected {
-                    0 => self.events.send(AppEvent::NavigateToLocal), // Local
-                    1 => self.events.send(AppEvent::Quit),            // Quit
+                    0 => self.events.send(AppEvent::NavigateToHost), // Host
+                    1 => self.events.send(AppEvent::NavigateToJoin), // Join
+                    2 => self.events.send(AppEvent::NavigateToLocal), // Local
+                    3 => self.events.send(AppEvent::Quit),           // Quit
                     _ => {}
                 }
             }
@@ -523,13 +578,40 @@ impl App {
     fn start_local_game(&mut self) {
         let config = Config::default();
         self.game = Some(Game::new(config));
+        self.network_mode = NetworkMode::Local;
         self.input_system.reset();
         self.last_tick = Instant::now();
     }
 
+    fn start_hosting(&mut self) {
+        self.menu_state.host_state = HostState::default();
+        self.menu_state.host_state.connection_status = "Initializing...".to_string();
+
+        // Try to create WebRTC transport in host mode
+        match RtcTransportBuilder::new_manual_sdp(SdpMode::Offer) {
+            Ok((transport, offer_sdp)) => {
+                self.menu_state.host_state.offer_sdp = offer_sdp;
+                self.menu_state.host_state.connection_status =
+                    "Ready to host. Copy the Offer SDP and send to peer.".to_string();
+                // TODO: Store transport for later use
+            }
+            Err(e) => {
+                self.menu_state.host_state.connection_status = format!("Error: {}", e);
+            }
+        }
+        self.network_mode = NetworkMode::Hosting;
+    }
+
+    fn setup_join(&mut self) {
+        self.menu_state.join_state = JoinState::default();
+        self.menu_state.join_state.connection_status =
+            "Waiting for peer's Offer SDP...".to_string();
+        self.network_mode = NetworkMode::Joining;
+    }
+
     // Helper methods for UI
     pub fn get_start_menu_items(&self) -> Vec<&str> {
-        vec!["Local", "Quit"]
+        vec!["Host", "Join", "Local", "Quit"]
     }
 
     pub fn get_local_menu_items(&self) -> Vec<&str> {

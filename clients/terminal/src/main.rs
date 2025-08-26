@@ -2,6 +2,7 @@ use crate::app::App;
 
 pub mod app;
 pub mod event;
+pub mod rtc_transport;
 pub mod ui;
 
 fn main() -> color_eyre::Result<()> {

@@ -8,6 +8,9 @@ pong_core = { path = "../../pong_core" }
 ratatui = "0.28"
 crossterm = "0.28"
 color-eyre = "0.6"
+webrtc = "0.11"
+tokio = { version = "1.0", features = ["full"] }
+serde_json = "1.0"
 
 [[bin]]
 name = "terminal-client"

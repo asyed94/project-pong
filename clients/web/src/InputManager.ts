@@ -5,7 +5,6 @@ import {
   MOBILE_CONFIG,
   STORAGE_KEYS,
   VIEWPORT_CONFIG,
-  FAST_INPUT_CONFIG,
 } from "./constants.js";
 
 export interface InputState {

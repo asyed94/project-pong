@@ -1,0 +1,29 @@
+{
+  "name": "pong-terminal-peer-bridge",
+  "version": "1.0.0",
+  "description": "PeerJS bridge for Rust terminal Pong client",
+  "main": "src/peer_bridge.js",
+  "bin": {
+    "peer-bridge": "src/peer_bridge.js"
+  },
+  "scripts": {
+    "install-deps": "npm install",
+    "bridge-host": "node src/peer_bridge.js host",
+    "bridge-join": "node src/peer_bridge.js join"
+  },
+  "dependencies": {
+    "peerjs": "^1.5.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "keywords": [
+    "pong",
+    "peerjs",
+    "webrtc",
+    "bridge",
+    "terminal"
+  ],
+  "author": "Pong Terminal Client",
+  "license": "MIT"
+}

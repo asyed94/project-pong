@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>🏓 Pong Web Client</title>
   <link rel="stylesheet" href="/src/styles/main.css" />
+  <link rel="stylesheet" href="/src/styles/peer_id.css" />
+  <link rel="stylesheet" href="/src/styles/peer_qr.css" />
 </head>
 <body>
   <div id="app">
@@ -18,6 +20,18 @@
         <div class="mode-title">Select Game Mode:</div>
         
         <div class="mode-buttons">
+          <button id="btn-host" class="mode-button">
+            <div class="mode-icon">🌐</div>
+            <div class="mode-name">HOST</div>
+            <div class="mode-desc">Host a networked game</div>
+          </button>
+          
+          <button id="btn-join" class="mode-button">
+            <div class="mode-icon">🔗</div>
+            <div class="mode-name">JOIN</div>
+            <div class="mode-desc">Join a networked game</div>
+          </button>
+          
           <button id="btn-vs-local2" class="mode-button">
             <div class="mode-icon">👥</div>
             <div class="mode-name">VS LOCAL 2P</div>
@@ -41,6 +55,68 @@
       <div class="terminal-section controls">
         Select a mode to start playing  •  
         <button id="fullscreen-btn" class="fullscreen-button">⛶ Fullscreen</button>
+      </div>
+    </div>
+
+    <!-- Host Screen -->
+    <div id="host-screen" class="screen" style="display: none;">
+      <div id="title-section" class="terminal-section title">
+        🌐 Host Game 🌐
+      </div>
+      
+      <div class="terminal-section host-content">
+        <div class="peer-id-section" id="host-peer-id-section">
+          <label for="host-peer-id-output" class="peer-id-label">Your Game ID:</label>
+          <input id="host-peer-id-output" class="peer-id-input" readonly placeholder="Generating Game ID..."/>
+          <button id="copy-peer-id-btn" class="copy-button">📋 Copy</button>
+          <div id="host-connection-string" class="connection-string"></div>
+        </div>
+        
+        <div class="connection-status">
+          <div id="host-status" class="status-text">Initializing...</div>
+          <div class="instruction-text">Share this Game ID with your friend to let them join!</div>
+        </div>
+        
+        <div class="host-buttons">
+          <button id="btn-host-back" class="mode-button back-btn">
+            <div class="mode-icon">←</div>
+            <div class="mode-name">BACK</div>
+            <div class="mode-desc">Return to menu</div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Join Screen -->
+    <div id="join-screen" class="screen" style="display: none;">
+      <div id="title-section" class="terminal-section title">
+        🔗 Join Game 🔗
+      </div>
+      
+      <div class="terminal-section join-content">
+        <div class="peer-id-section" id="join-peer-id-section">
+          <label for="join-peer-id-input" class="peer-id-label">Enter Host's Game ID:</label>
+          <input id="join-peer-id-input" class="peer-id-input" placeholder="Enter Game ID (e.g., abc1-2def-3456)"/>
+          <div class="instruction-text">Ask the host for their Game ID to connect.</div>
+        </div>
+        
+        <div class="connection-status">
+          <div id="join-status" class="status-text">Enter Game ID to connect</div>
+        </div>
+        
+        <div class="join-buttons">
+          <button id="btn-join-connect" class="mode-button connect-btn">
+            <div class="mode-icon">🔗</div>
+            <div class="mode-name">CONNECT</div>
+            <div class="mode-desc">Join the game</div>
+          </button>
+          
+          <button id="btn-join-back" class="mode-button back-btn">
+            <div class="mode-icon">←</div>
+            <div class="mode-name">BACK</div>
+            <div class="mode-desc">Return to menu</div>
+          </button>
+        </div>
       </div>
     </div>
 

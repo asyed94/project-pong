@@ -41,6 +41,8 @@ export const INPUT_CONFIG = {
     HIGH: 6.0,
     DEFAULT: 6.0, // Higher default for faster response
   },
+  // Input smoothing factor for AI
+  INPUT_SMOOTHING: 0.15,
 };
 
 export const VIEWPORT_CONFIG = {

@@ -1,0 +1,114 @@
+/* PeerJS peer ID interface styles */
+
+.peer-id-section {
+  background: rgba(76, 175, 80, 0.1);
+  border: 1px solid #4CAF50;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.peer-id-label {
+  display: block;
+  font-weight: bold;
+  color: #4CAF50;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.peer-id-input {
+  width: 100%;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid #4CAF50;
+  border-radius: 4px;
+  color: #00FF41;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  text-align: center;
+  letter-spacing: 1px;
+}
+
+.peer-id-input:read-only {
+  background: rgba(76, 175, 80, 0.1);
+  cursor: default;
+}
+
+.copy-button {
+  background: #4CAF50;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: bold;
+  transition: all 0.2s ease;
+  margin-left: 0.5rem;
+}
+
+.copy-button:hover {
+  background: #45a049;
+  transform: translateY(-1px);
+}
+
+.copy-button:active {
+  transform: translateY(0);
+}
+
+.connection-string {
+  font-size: 0.8rem;
+  color: #888;
+  margin-top: 0.5rem;
+  font-family: 'Courier New', monospace;
+  text-align: center;
+}
+
+.instruction-text {
+  font-size: 0.85rem;
+  color: #aaa;
+  margin-top: 0.5rem;
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .peer-id-input {
+    font-size: 0.8rem;
+    padding: 0.6rem;
+  }
+  
+  .copy-button {
+    width: 100%;
+    margin: 0.5rem 0 0 0;
+  }
+  
+  .peer-id-section {
+    padding: 0.75rem;
+    margin: 0.75rem 0;
+  }
+}
+
+/* Animation for peer ID reveal */
+.peer-id-input.reveal {
+  animation: fadeInScale 0.5s ease-out;
+}
+
+@keyframes fadeInScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Success feedback for copy button */
+.copy-button.copied {
+  background: #2196F3 !important;
+  transform: scale(1.05);
+}

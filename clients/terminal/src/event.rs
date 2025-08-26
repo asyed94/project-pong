@@ -36,6 +36,8 @@ pub enum AppEvent {
     Quit,
     /// Navigate to a screen
     NavigateToStart,
+    NavigateToHost,
+    NavigateToJoin,
     NavigateToLocal,
     NavigateToGame,
     /// Menu navigation
