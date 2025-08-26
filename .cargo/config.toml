@@ -1,0 +1,12 @@
+# Cargo configuration for easier WASM builds
+
+[alias]
+# Build for web target with WASM features
+build-wasm = "build --target wasm32-unknown-unknown --features wasm"
+
+# Check for web target with WASM features  
+check-wasm = "check --target wasm32-unknown-unknown --features wasm"
+
+[build]
+# Default to native target, but can be overridden
+target-dir = "target"

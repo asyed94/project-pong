@@ -5,6 +5,10 @@ pub mod physics;
 pub mod serialization;
 pub mod types;
 
+// WASM bridge module - only compiled when wasm feature is enabled
+#[cfg(feature = "wasm")]
+pub mod wasm;
+
 pub use game::Game;
 pub use types::*;
 

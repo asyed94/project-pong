@@ -11,6 +11,7 @@ pub type Tick = u32;
 
 /// Player/paddle side
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "wasm", derive(serde::Serialize, serde::Deserialize))]
 pub enum Side {
     Left,
     Right,
@@ -28,6 +29,7 @@ impl Side {
 
 /// Game status
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "wasm", derive(serde::Serialize, serde::Deserialize))]
 pub enum Status {
     /// Waiting for players to be ready
     Lobby,
@@ -43,6 +45,7 @@ pub enum Status {
 
 /// Game configuration
 #[derive(Debug, Copy, Clone)]
+#[cfg_attr(feature = "wasm", derive(serde::Serialize, serde::Deserialize))]
 pub struct Config {
     /// Half-height of paddle
     pub paddle_half_h: Fx,
@@ -88,6 +91,7 @@ impl Default for Config {
 
 /// 2D vector in fixed-point
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "wasm", derive(serde::Serialize, serde::Deserialize))]
 pub struct Vec2 {
     pub x: Fx,
     pub y: Fx,
@@ -214,6 +218,7 @@ impl ScreenRect {
 
 /// Pure physics view - client agnostic game state
 #[derive(Debug, Copy, Clone)]
+#[cfg_attr(feature = "wasm", derive(serde::Serialize, serde::Deserialize))]
 pub struct View {
     pub tick: Tick,
     pub status: Status,
@@ -350,6 +355,7 @@ impl RenderHelper {
 
 /// Game events that can occur during a tick
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "wasm", derive(serde::Serialize, serde::Deserialize))]
 pub enum Event {
     Scored {
         scorer: Side,

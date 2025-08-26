@@ -1,324 +1,705 @@
-# Deterministic P2P Pong — Design Specification
+# Deterministic P2P Pong
 
-A concise, comprehensive, and implementable spec for a cross‑platform Pong with a shared Rust core, terminal (TUI) client, and web (WASM) client. Direct P2P via WebRTC DataChannel and manual SDP exchange.
+A cross-platform, deterministic multiplayer Pong game built in Rust with a shared core library, terminal client, and planned web client featuring direct P2P networking via WebRTC.
 
----
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
+![License](https://img.shields.io/badge/license-MIT-blue)
+![Rust Version](https://img.shields.io/badge/rust-1.75+-orange)
 
-## 1) Overview
+## 🎮 Quick Start
 
-- Shared Rust core `pong_core`: deterministic game state, per‑tick simulation, compact serialization. Compiles to native and WASM.
-- Lockstep netcode: each peer sends inputs per tick; both step the same simulation. Optional snapshots for resync.
-- Transport: WebRTC DataChannel with manual Offer/Answer (copy/paste). No STUN/TURN or signaling; LAN only.
-- Clients:
-  - Terminal: `ratatui` + `crossterm`, enhanced keyboard detection with momentum fallback.
-  - Web: DOM/JS UI with mobile‑friendly controls; core in WASM.
+```bash
+# Clone the repository
+git clone https://github.com/asyed94/project-pong.git
+cd project-pong
 
-Per‑tick loop:
-1) Read local input → `axis_y:i8` and `buttons:u8`.
-2) Send local input for tick T; buffer locally.
-3) When both inputs for T exist, call `Game::step`.
-4) Render `Game::view`; handle events.
-5) Increment T and repeat.
+# Run the terminal client
+cargo run --bin terminal-client
 
----
-
-## 2) Architecture
-
-```
-+-------------------------+        WebRTC DataChannel       +-------------------------+
-| Terminal Client (Rust)  | <-----------------------------> | Web Client (JS + WASM)  |
-|                         |         (Input, Snapshot)       |                         |
-|  Input Mapper (keys)    |                                 |  Input Mapper (touch)   |
-|  Lockstep (tick/queue)  |                                 |  Lockstep (tick/queue)  |
-|  Transport (RTC)        |                                 |  Transport (RTC)        |
-|  pong_core (native)     |                                 |  pong_core (WASM)       |
-|  TUI Renderer           |                                 |  DOM Renderer           |
-+-------------------------+                                 +-------------------------+
+# Or run the CLI testing harness
+cargo run --bin cli_harness
 ```
 
-Directory layout:
+## 📋 Table of Contents
+
+- [Features](#-features)
+- [Installation](#-installation)
+- [Usage](#-usage)
+- [Development](#-development)
+- [Architecture](#-architecture)
+- [Data Model](#-data-model)
+- [API Documentation](#-api-documentation)
+- [Contributing](#-contributing)
+- [License](#-license)
+
+## ✨ Features
+
+- **Deterministic Physics**: Fixed-point arithmetic ensures identical gameplay across all platforms
+- **Cross-Platform**: Shared Rust core compiles to native and WebAssembly
+- **[TODO] Lockstep Networking**: Synchronized gameplay for lag-free multiplayer experience
+- **Direct P2P**: [TODO] WebRTC DataChannel with manual SDP exchange (no servers required)
+- **Multiple Clients**: Terminal UI and [TODO] planned web interface
+- **Local Modes**: [TODO] Play against AI, wall, or local second player (currently only 2-player local)
+- **Serializable State**: Complete game state snapshots for synchronization
+
+## 🚀 Installation
+
+### Prerequisites
+
+- **Rust**: Version 1.75 or later
+- **Development Environment**: Optional but recommended: [devbox](https://www.jetpack.io/devbox)
+
+### Using Devbox (Recommended)
+
+```bash
+# Install devbox if you haven't already
+curl -fsSL https://get.jetpack.io/devbox | bash
+
+# Enter the development environment
+devbox shell
+
+# Build the project
+cargo build
 ```
-/pong_core/            # Rust lib (native + WASM)
-/clients/terminal/     # Rust app (ratatui + crossterm)
-/clients/web/          # HTML/JS/TS + wasm-bindgen
+
+### Manual Installation
+
+```bash
+# Install Rust if you haven't already
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Clone and build
+git clone https://github.com/asyed94/project-pong.git
+cd project-pong
+cargo build --release
 ```
 
----
+### Building for WebAssembly
 
-## 3) Screens and Navigation
+```bash
+# Install wasm-pack
+cargo install wasm-pack
 
-Screens (both clients):
-- Start: Host, Join, Local, Quit
-- Host: show Offer, paste Answer, connect
-- Join: paste Offer, show Answer, connect
-- Local: start offline vs AI, vs Wall, or vs Local Player 2
-- Game: shared playfield; Rematch or Leave
-
-State diagram:
-```mermaid
-stateDiagram-v2
-  [*] --> Start
-
-  Start --> Host: Host
-  Start --> Join: Join
-  Start --> Local: Local
-  Start --> Quit: Quit
-
-  Host --> Game: DataChannel open
-  Host --> Start: Back / Fail
-
-  Join --> Game: DataChannel open
-  Join --> Start: Back / Fail
-
-  Local --> Game: Start local match
-  Local --> Start: Back
-
-  Game --> Game: Rematch
-  Game --> Start: Leave / Disconnect
+# Build the WASM module
+cd pong_core
+wasm-pack build --target web --out-dir ../clients/web/pkg
 ```
 
+## 🎯 Usage
+
+### Terminal Client
+
+The terminal client provides a full TUI experience using ratatui:
+
+```bash
+# Run the terminal client
+cargo run --bin terminal-client
+
+# [TODO] With specific configuration (CLI args not implemented)
+# cargo run --bin terminal-client -- --tick-rate 60 --max-score 11
+```
+
+**Controls:**
+
+- `↑/↓` or `W/S`: Move paddles (Player 1: W/S, Player 2: Arrow keys)
+- `Space`: Ready/Start game
+- `ESC`: Back to main menu
+- `Q`: Quit
+
+**Game Modes:**
+
+- **[TODO] Host**: Create a game and share your SDP offer
+- **[TODO] Join**: Join a game using the host's SDP offer
+- **Local**: Two-player local gameplay (AI and wall modes [TODO])
+- **Quit**: Exit the application
+
+### CLI Harness
+
+For testing and development, use the CLI harness to run headless simulations:
+
+```bash
+# Run basic simulation (interactive two-player game)
+cargo run --bin cli_harness
+
+# [TODO] Run with custom parameters (CLI args not implemented)
+# cargo run --bin cli_harness -- --ticks 1000 --left-ai --right-ai
+
+# [TODO] Test deterministic behavior (CLI args not implemented)
+# cargo run --bin cli_harness -- --seed 12345 --verify-determinism
+```
+
+### Web Client [TODO]
+
+The web client will provide mobile-friendly controls and DOM-based rendering:
+
+```bash
+# [TODO] Build WASM module (web client not implemented)
+# wasm-pack build --target web pong_core
+
+# [TODO] Serve the web client (directory doesn't exist)
+# cd clients/web
+# python -m http.server 8080
+# Open http://localhost:8080
+```
+
+## 🛠 Development
+
+### Project Structure
+
+```
+repo/
+├── pong_core/              # Shared game engine (Rust lib)
+│   ├── src/
+│   │   ├── lib.rs         # Public API exports
+│   │   ├── types.rs       # Core types and fixed-point math
+│   │   ├── game.rs        # Game state and logic
+│   │   ├── physics.rs     # Physics simulation
+│   │   ├── serialization.rs # State serialization
+│   │   └── wasm.rs        # WebAssembly bindings
+│   └── Cargo.toml
+├── cli_harness/           # Testing harness
+│   ├── src/main.rs
+│   └── Cargo.toml
+├── clients/
+│   └── terminal/          # Terminal UI client
+│       ├── src/
+│       │   ├── main.rs    # Application entry point
+│       │   ├── app.rs     # Application state
+│       │   ├── ui.rs      # TUI rendering
+│       │   └── event.rs   # Input handling
+│       └── Cargo.toml
+├── Cargo.toml             # Workspace configuration
+└── design-spec.md         # Detailed technical specification
+```
+
+### Building Different Targets
+
+```bash
+# Native debug build
+cargo build
+
+# Native release build
+cargo build --release
+
+# WASM build for web
+cd pong_core
+wasm-pack build --target web --features wasm
+
+# Build all workspace members
+cargo build --workspace
+
+# Build specific binary
+cargo build --bin terminal-client
+cargo build --bin cli_harness
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+cargo test
+
+# Run tests for specific crate
+cargo test -p pong_core
+
+# Run tests with output
+cargo test -- --nocapture
+
+# Run specific test
+cargo test test_deterministic_simulation
+
+# Test WASM compatibility
+cd pong_core
+wasm-pack test --headless --firefox --features wasm
+```
+
+### Development Workflow
+
+1. **Core Changes**: Modify `pong_core/` for game logic
+2. **Test**: Run `cargo test -p pong_core` to verify changes
+3. **Terminal Client**: Test with `cargo run --bin terminal-client`
+4. **CLI Testing**: Use `cargo run --bin cli_harness` for automated testing
+5. **WASM Build**: Rebuild WASM if core changes affect web client
+
+### Code Style
+
+- **Rust 2021 Edition**: Modern Rust features enabled
+- **Fixed-Point Math**: All physics calculations use `Fx` type (16.16 format)
+- **Deterministic**: No floating-point operations in simulation
+- **Error Handling**: Use `Result` types for fallible operations
+- **Documentation**: Document all public APIs with `///` comments
+
+## 🏗 Architecture
+
+### High-Level Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    DETERMINISTIC PONG ARCHITECTURE              │
+└─────────────────────────────────────────────────────────────────┘
+
+         ┌─────────────────┐                    ┌─────────────────┐
+         │  Terminal Client│                    │   Web Client    │
+         │   (ratatui)     │                    │  (JS + WASM)    │
+         └─────────────────┘                    └─────────────────┘
+                   │                                      │
+                   │             Network Layer            │
+                   │        (WebRTC DataChannel)          │
+                   │                                      │
+         ┌─────────┴─────────┐                  ┌─────────┴─────────┐
+         │   Lockstep Net    │ ◄──────────────► │   Lockstep Net    │
+         │   (tick sync)     │   Input/Snapshot │   (tick sync)     │
+         └─────────┬─────────┘                  └─────────┬─────────┘
+                   │                                      │
+         ┌─────────┴─────────┐                  ┌─────────┴─────────┐
+         │    pong_core      │                  │    pong_core      │
+         │    (native)       │                  │     (WASM)        │
+         └───────────────────┘                  └───────────────────┘
+
+                            ┌─────────────────────┐
+                            │     SHARED CORE     │
+                            │                     │
+                            │  ┌───────────────┐  │
+                            │  │  Game State   │  │
+                            │  │   (tick N)    │  │
+                            │  └───────────────┘  │
+                            │  ┌───────────────┐  │
+                            │  │   Physics     │  │
+                            │  │ (fixed-point) │  │
+                            │  └───────────────┘  │
+                            │  ┌───────────────┐  │
+                            │  │ Serialization │  │
+                            │  │  (snapshots)  │  │
+                            │  └───────────────┘  │
+                            └─────────────────────┘
+```
+
+### Component Relationships
+
+#### pong_core (Shared Library)
+
+- **Deterministic Engine**: Fixed-point physics simulation
+- **Cross-Platform**: Compiles to native Rust and WebAssembly
+- **Stateless API**: Pure functions for stepping simulation
+- **Serializable**: Complete state snapshots for networking
+
+#### Lockstep Networking
+
+- **Tick Synchronization**: Both clients must have inputs for tick N before advancing
+- **Input Broadcasting**: Local inputs sent to remote peer each tick
+- **State Synchronization**: Periodic snapshots for resync if needed
+- **Fault Tolerance**: Handle missing/late packets gracefully
+
+#### Client Implementations
+
+- **Terminal**: Native Rust using ratatui for TUI rendering
+- **Web**: JavaScript/TypeScript with WASM core for simulation
+- **Input Mapping**: Platform-specific controls mapped to standard input format
+- **Rendering**: Client-specific rendering of shared game state
+
+### Network Protocol
+
+```
+Tick Timeline:
+T0: ┌─ Local Input  ─┐    ┌─ Remote Input ─┐
+    │   axis_y: 50   │    │   axis_y: -30  │
+    │   buttons: 0   │ ►► │   buttons: 1   │ ►►  Step Simulation
+    └────────────────┘    └────────────────┘         │
+                                                     ▼
+T1: ┌─ Local Input  ─┐    ┌─ Remote Input ─┐    ┌─ Game State  ─┐
+    │   axis_y: 25   │    │   axis_y: 0    │    │  paddles[2]   │
+    │   buttons: 0   │ ►► │   buttons: 0   │ ►► │  ball: (x,y)  │
+    └────────────────┘    └────────────────┘    │  score: [1,0] │
+                                                └───────────────┘
+```
+
+### Deterministic Design Principles
+
+1. **Fixed-Point Mathematics**: All calculations use 16.16 fixed-point format
+2. **Reproducible Random**: Seeded PRNG for consistent ball serves
+3. **Tick-Based Simulation**: No wall-clock time dependencies
+4. **Input Quantization**: Analog inputs mapped to discrete values
+5. **State Snapshots**: Complete game state serializable for sync
+
+## 📊 Data Model
+
+### Core Types
+
+#### Fixed-Point Mathematics
+
+```rust
+pub type Fx = i32;                    // 16.16 fixed-point format
+pub const FX_ONE: Fx = 1 << 16;      // Represents 1.0
+
+// Utility functions
+fx::from_f32(1.5) → 98304            // Convert from float
+fx::to_f32(FX_ONE) → 1.0             // Convert to float
+fx::mul_fx(a, b) → result            // Fixed-point multiply
+```
+
+#### Game Configuration
+
+```rust
+pub struct Config {
+    pub paddle_half_h: Fx,            // Half-height of paddles
+    pub paddle_speed: Fx,             // Movement speed per tick
+    pub ball_speed: Fx,               // Initial ball speed
+    pub ball_speed_up: Fx,            // Speed multiplier on hit
+    pub wall_thickness: Fx,           // Wall collision thickness
+    pub paddle_x: Fx,                 // Distance from screen edge
+    pub max_score: u8,                // Score to win game
+    pub seed: u64,                    // Random number seed
+    pub tick_hz: u16,                 // Simulation frequency
+    pub ball_radius: Fx,              // Ball collision radius
+    pub paddle_width: Fx,             // Paddle collision width
+}
+```
+
+#### Game State
+
+```rust
+pub struct Game {
+    pub config: Config,               // Game configuration
+    pub tick: Tick,                   // Current simulation tick
+    pub status: Status,               // Game phase
+    pub paddles: [Paddle; 2],         // Left and right paddles
+    pub ball: Ball,                   // Ball state
+    pub score: [u8; 2],               // [left, right] scores
+    pub rng: u64,                     // Random state
+}
+
+pub enum Status {
+    Lobby,                            // Waiting for ready
+    Countdown(u16),                   // Countdown to start
+    Playing,                          // Active gameplay
+    Scored(Side, u16),                // Post-goal pause
+    GameOver(Side),                   // Game finished
+}
+```
+
+#### Input System
+
+```rust
+pub struct Input {
+    pub axis_y: i8,                   // Vertical input [-127, 127]
+    pub buttons: u8,                  // Button bitfield
+}
+
+pub struct InputPair {
+    pub tick: Tick,                   // Target simulation tick
+    pub a: Input,                     // Left player input
+    pub b: Input,                     // Right player input
+}
+```
+
+#### Physics Objects
+
+```rust
+pub struct Vec2 {
+    pub x: Fx,
+    pub y: Fx,
+}
+
+pub struct Paddle {
+    pub y: Fx,                        // Center Y position
+    pub vy: Fx,                       // Y velocity
+}
+
+pub struct Ball {
+    pub pos: Vec2,                    // Position
+    pub vel: Vec2,                    // Velocity
+}
+```
+
+### Serialization Format
+
+#### Input Pair (9 bytes) - ✅ Implemented
+
+```
+InputPair::encode() -> [u8; 9]  // Basic serialization without wire protocol headers
+```
+
+#### Snapshot (49 bytes) - ✅ Implemented
+
+```
+Snapshot::encode() -> Vec<u8>   // Binary format without wire protocol headers
+```
+
+#### [TODO] Wire Protocol Messages (not implemented)
+
+```
+[0x01][tick:u32][a_axis:i8][a_btn:u8][b_axis:i8][b_btn:u8]  // Input message
+[0x02][tick:u32][status][paddles][ball][score][rng:u64]     // Snapshot message
+[0x03][timestamp:u32]                                        // Ping message
+```
+
+### State Transitions
+
+```
+Game State Flow:
+
+    ┌───────┐  both ready  ┌─────────────┐   timer expires  ┌─────────┐
+    │ Lobby │ ──────────►  │ Countdown   │ ──────────────►  │ Playing │
+    └───────┘              │ (180 ticks) │                  └─────────┘
+        ▲                  └─────────────┘                       │
+        │                                                        │ ball exit
+        │                        ┌──────────────┐                │
+        │  game over             │ Scored       │ ◄──────────────┘
+        │                        │ (180 ticks)  │
+        │                        └──────────────┘
+        │                                 │
+        │  max score reached              │ timer expires
+        │                                 ▼
+        │                        ┌──────────────┐
+        └────────────────────────│  GameOver    │
+                                 └──────────────┘
+```
+
+## 📚 API Documentation
+
+### pong_core Public API
+
+#### Game Management
+
+```rust
+impl Game {
+    /// Create new game with configuration
+    pub fn new(config: Config) -> Self;
+
+    /// Step simulation forward one tick
+    pub fn step(&mut self, inputs: &InputPair) -> Option<Event>;
+
+    /// Get current game view for rendering
+    pub fn view(&self) -> View;
+
+    /// Create state snapshot
+    pub fn snapshot(&self) -> Snapshot;
+
+    /// Restore from snapshot
+    pub fn restore(&mut self, snapshot: &Snapshot);
+
+    /// Reset for new match
+    pub fn reset_match(&mut self);
+
+    /// Check if game accepts input
+    pub fn is_active(&self) -> bool;
+
+    /// Get winner if game over
+    pub fn winner(&self) -> Option<Side>;
+}
+```
+
+#### Input Creation
+
+```rust
+impl Input {
+    /// Create new input
+    pub fn new(axis_y: i8, buttons: u8) -> Self;
+
+    /// Create zero input (no movement)
+    pub fn zero() -> Self;
+
+    /// Check if ready button pressed
+    pub fn is_ready(&self) -> bool;
+}
+
+impl InputPair {
+    /// Create input pair for specific tick
+    pub fn new(tick: Tick, a: Input, b: Input) -> Self;
+
+    /// Get input for specific side
+    pub fn get_input(&self, side: Side) -> Input;
+}
+```
+
+#### Fixed-Point Utilities
+
+```rust
+pub mod fx {
+    /// Convert from f32 to fixed-point
+    pub fn from_f32(f: f32) -> Fx;
+
+    /// Convert from fixed-point to f32
+    pub fn to_f32(value: Fx) -> f32;
+
+    /// Multiply two fixed-point numbers
+    pub fn mul_fx(a: Fx, b: Fx) -> Fx;
+
+    /// Divide two fixed-point numbers
+    pub fn div_fx(a: Fx, b: Fx) -> Fx;
+
+    /// Clamp value between min and max
+    pub fn clamp_fx(value: Fx, min: Fx, max: Fx) -> Fx;
+}
+```
+
+### WASM Bindings API
+
+#### WasmGame Interface
+
+```rust
+#[wasm_bindgen]
+impl WasmGame {
+    /// Create new game from JSON config
+    #[wasm_bindgen(constructor)]
+    pub fn new(config_json: &str) -> Result<WasmGame, JsValue>;
+
+    /// Step simulation with inputs
+    #[wasm_bindgen]
+    pub fn step(&mut self, tick: u32, a_axis: i8, a_btn: u8,
+                b_axis: i8, b_btn: u8) -> Option<String>;
+
+    /// Get game view as JSON
+    #[wasm_bindgen]
+    pub fn view_json(&self) -> String;
+
+    /// Get snapshot as bytes
+    #[wasm_bindgen]
+    pub fn snapshot_bytes(&self) -> Vec<u8>;
+
+    /// Restore from snapshot bytes
+    #[wasm_bindgen]
+    pub fn restore_bytes(&mut self, bytes: &[u8]);
+}
+```
+
+### Usage Examples
+
+#### Basic Game Loop
+
+```rust
+use pong_core::{Game, Config, Input, InputPair};
+
+let mut game = Game::new(Config::default());
+let mut tick = 0;
+
+loop {
+    // Get local input (example: keyboard)
+    let local_input = Input::new(get_axis_input(), get_button_input());
+    let remote_input = receive_remote_input(); // From network
+
+    let inputs = InputPair::new(tick, local_input, remote_input);
+
+    // Step simulation
+    if let Some(event) = game.step(&inputs) {
+        handle_game_event(event);
+    }
+
+    // Render current state
+    let view = game.view();
+    render_game(&view);
+
+    tick += 1;
+    std::thread::sleep(Duration::from_millis(16)); // ~60 FPS
+}
+```
+
+#### Fixed-Point Math
+
+```rust
+use pong_core::{fx, FX_ONE};
+
+// Convert from floating point
+let speed = fx::from_f32(1.5);           // 1.5 units/second
+let half_field = FX_ONE / 2;             // 0.5 (field center)
+
+// Physics calculation
+let position = fx::mul_fx(speed, time);   // speed * time
+let clamped = fx::clamp_fx(position, 0, FX_ONE); // Keep in bounds
+
+// Convert back to float for rendering
+let screen_pos = fx::to_f32(clamped) * screen_width;
+```
+
+#### Snapshot System
+
+```rust
+// Create checkpoint
+let checkpoint = game.snapshot();
+
+// Simulate some ticks
+for i in 0..100 {
+    let inputs = InputPair::new(tick + i, local_input, remote_input);
+    game.step(&inputs);
+}
+
+// Restore if desynchronized
+if needs_resync {
+    game.restore(&checkpoint);
+}
+```
+
+## 🤝 Contributing
+
+We welcome contributions! Here's how to get started:
+
+### Development Setup
+
+1. Fork the repository
+2. Clone your fork: `git clone https://github.com/yourusername/project-pong.git`
+3. Enter development environment: `devbox shell` (or install Rust manually)
+4. Create a feature branch: `git checkout -b feature/amazing-feature`
+5. Make changes and test: `cargo test`
+6. Commit changes: `git commit -m 'Add amazing feature'`
+7. Push to branch: `git push origin feature/amazing-feature`
+8. Open a Pull Request
+
+### Areas for Contribution
+
+- **WebRTC Transport**: Implement P2P networking layer
+- **Web Client**: Complete HTML/JS/WASM frontend
+- **Mobile Controls**: Touch-friendly input for web client
+- **AI Improvements**: Smarter AI opponents
+- **Visual Polish**: Better rendering and effects
+- **Performance**: Optimization and profiling
+- **Documentation**: Code examples and tutorials
+- **Testing**: Additional test coverage
+
+### Code Review Guidelines
+
+- Ensure all tests pass: `cargo test`
+- Follow Rust naming conventions
+- Document public APIs with `///` comments
+- Maintain deterministic behavior in core
+- No floating-point math in simulation code
+
+### Reporting Issues
+
+- Use GitHub Issues for bugs and feature requests
+- Include minimal reproduction steps
+- Specify platform and Rust version
+- For performance issues, include profiling data
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🎯 Roadmap
+
+### Current Status (M1)
+
+- ✅ Core deterministic physics engine
+- ✅ Fixed-point mathematics system
+- ✅ Terminal client with TUI
+- ✅ CLI testing harness
+- ✅ Comprehensive test suite
+
+### Planned Features
+
+- **M2**: WebRTC transport implementation
+- **M3**: Web client with WASM integration
+- **M4**: Mobile-friendly controls
+- **M5**: Enhanced AI and game modes
+- **M6**: Spectator mode and replays
+
+### Long-term Goals
+
+- Tournament bracket system
+- Custom game modes and physics
+- Replay system with sharing
+- Cross-platform leaderboards
+- Plugin system for mods
+
 ---
 
-## 4) Core Module (`pong_core`)
-
-Determinism:
-- Fixed‑point 16.16 integers for all gameplay math.
-- Normalized field: width = 1.0, height = 1.0 (UI maps to pixels/rows).
-- One tick = one deterministic step. No wall‑clock in simulation.
-
-Key types:
-- `type Tick = u32; type Fx = i32; const FX_ONE: Fx = 1 << 16;`
-- `struct Config { paddle_half_h: Fx, paddle_speed: Fx, ball_speed: Fx, ball_speed_up: Fx, wall_thickness: Fx, paddle_x: Fx, max_score: u8, seed: u64, tick_hz: u16 }`
-- `enum Side { Left, Right }`
-- `enum Status { Lobby, Countdown(u16), Playing, Scored(Side, u16), GameOver(Side) }`
-- `struct Paddle { y: Fx, vy: Fx }`
-- `struct Vec2 { x: Fx, y: Fx }`
-- `struct Ball { pos: Vec2, vel: Vec2 }`
-- `struct Game { cfg, tick, status, paddles:[Paddle;2], ball:Ball, score:[u8;2], rng:u64 }`
-- `struct Input { axis_y: i8, buttons: u8 }`  // `axis_y` in [-127,127]
-- `struct InputPair { tick: Tick, a: Input, b: Input }`
-- `struct Snapshot { tick, status, paddles, ball, score, rng }`
-- `struct View { tick, status, left_y, right_y, paddle_half_h, ball_pos, score }`
-- `enum Event { Scored { scorer: Side, score: [u8;2] } }`
-
-Public API:
-- `Game::new(cfg: Config) -> Game`
-- `Game::step(&mut self, inputs: &InputPair) -> Option<Event>`
-- `Game::view(&self) -> View`
-- `Game::snapshot(&self) -> Snapshot`
-- `Game::restore(&mut self, s: &Snapshot)`
-
-Serialization:
-- `Input::encode/decode`, `InputPair::encode/decode`, `Snapshot::encode/decode` using small, fixed little‑endian formats. No external dependencies.
-
-WASM bridge (`pong_core/src/wasm.rs`):
-- `struct WasmGame { inner: Game }`
-- `WasmGame::new(cfg_json: String) -> Result<WasmGame, JsValue>`
-- `WasmGame::step(tick: u32, a_axis: i8, a_btn: u8, b_axis: i8, b_btn: u8) -> Option<String>` // JSON event or null
-- `WasmGame::view_json() -> String`
-- `WasmGame::snapshot_bytes() -> Vec<u8>`
-- `WasmGame::restore_bytes(bytes: &[u8])`
-
----
-
-## 5) Lockstep Netcode
-
-Responsibilities:
-- Maintain tick T, side assignment, input buffers.
-- Each tick: push local input, send to peer, step when both inputs for T available.
-- Decode incoming bytes, insert into buffers.
-- Optional: snapshots for resync.
-
-Rust interface (terminal):
-- `trait CoreAdapter { fn step(&mut self, pair:&InputPair)->Option<Event>; fn view(&self)->View; fn snapshot(&self)->Snapshot; fn restore(&mut self, s:&Snapshot); }`
-- `trait Transport { fn send(&self, bytes:&[u8]) -> Result<(), TransportError>; fn set_on_message(&mut self, f: Box<dyn Fn(Vec<u8>) + Send>); fn is_open(&self)->bool; }`
-- `enum WireMsg { InputPair(InputPair), Snapshot(Vec<u8>), Ping(u32) }`
-- `struct Lockstep<C:CoreAdapter, T:Transport> { ... }`
-  - `new(core, tx, tick_hz, local_side, is_timekeeper) -> Self`
-  - `on_local_input(axis_y:i8, buttons:u8)`
-  - `tick() -> (View, Vec<Event>)`
-  - `on_net_bytes(bytes:&[u8])`
-  - `request_snapshot()`
-  - `apply_snapshot(data:&[u8])`
-
-JS interface (web):
-- `interface Transport { send(bytes:Uint8Array):void; onMessage(cb:(bytes:Uint8Array)=>void):void; isOpen():boolean }`
-- `interface Core { step(...): any|null; view_json():string; snapshot_bytes():Uint8Array; restore_bytes(bytes:Uint8Array):void }`
-- `class Lockstep { constructor(core, tx, tickHz, localSide, isTimekeeper); onLocalInput(axisY:number, buttons:number):void; tick(): { view:any, events:any[] }; onNetBytes(bytes:Uint8Array):void; requestSnapshot():void; applySnapshot(bytes:Uint8Array):void; }`
-
-Late/_missing packets:
-- Do not advance T until both inputs for T present.
-- Keep rendering last confirmed `View`.
-- Keep sending local inputs for successive ticks (buffers allow catching up).
-
----
-
-## 6) Transport (WebRTC DataChannel)
-
-Manual pairing (no signaling):
-- Host creates Offer, shows SDP.
-- Join pastes Offer, creates Answer, shows SDP.
-- Host pastes Answer.
-- On `datachannel.onopen`, transition to `Game`.
-
-Rust (terminal):
-- `struct RtcTransport { ... }`
-  - `new_manual_sdp(mode: Mode) -> Result<(Self, String), TransportError>` // returns local SDP (Offer or Answer)
-  - `set_remote_sdp(sdp: String) -> Result<(), TransportError>`
-  - Implements `Transport`.
-
-Web (JS):
-- `class RtcTransport implements Transport { constructor(mode:"offer"|"answer"); localSdp():Promise<string>; setRemoteSdp(sdp:string):Promise<void>; send(bytes:Uint8Array):void; onMessage(cb:(bytes:Uint8Array)=>void):void; isOpen():boolean }`
-
-Channel settings:
-- Start with ordered + reliable (simplest).
-- Optional: unordered + maxRetransmits: 0 for lower latency; if used, consider occasional snapshots to recover.
-
----
-
-## 7) Wire Protocol
-
-Single‑byte type header:
-- `0x01` InputPair: `[0x01][tick:u32][a_axis:i8][a_btn:u8][b_axis:i8][b_btn:u8]` // 9 bytes
-- `0x02` Snapshot: `[0x02][snapshot_bytes...]`  // encoded by `Snapshot::encode`
-- `0x03` Ping (optional): `[0x03][client_time_ms:u32]`
-
-Parsing:
-- `on_net_bytes`: switch on type; decode to `WireMsg`; update buffers or apply snapshot.
-
----
-
-## 8) Client Implementations
-
-### Terminal (Rust, `ratatui` + `crossterm`)
-State:
-- `struct TerminalApp { screen: AppScreen, lockstep, rtc: Option<RtcTransport>, key_mode: KeyMode, sdp: { offer:String, answer:String }, local_mode: LocalMode }`
-- `enum AppScreen { Start, Host, Join, Local, Game }`
-- `enum LocalMode { VsAI, VsWall, VsLocal2 }`
-- `enum KeyMode { Enhanced, BasicMomentum }`
-
-Input mapping:
-- Enhanced: Up/Down → `axis_y = ±127`; none → `0`. Space for Ready (button bit 0).
-- BasicMomentum: local easing `[-1,1]` mapped to `i8`; smoother on limited terminals.
-
-Rendering:
-- Start/Host/Join/Local: centered panels, text inputs for SDP, buttons (hotkeys).
-- Game: borders, paddles as vertical bars, ball as dot, score at top.
-
-Game wiring:
-- Networked: `Lockstep<RustCoreAdapter, RtcTransport>`.
-- Local:
-  - VsAI: AI controls remote `axis_y`.
-  - VsWall: reflect ball at wall side (fake paddle collision).
-  - VsLocal2: second player keys (e.g., W/S) → remote `axis_y`.
-
-### Web (JS + DOM + WASM)
-State:
-- `class WebApp { state, lockstep, rtc, localMode, controls }`
-
-Controls:
-- Touch drag region maps vertical movement to `axis_y` in [-127,127].
-- On‑screen Up/Down buttons for accessibility.
-- Ready/Rematch/Leave buttons mapped to button bits and navigation.
-
-Rendering:
-- Monospace “terminal look” via CSS.
-- Simulation ticks via `setInterval(1000 / tickHz)`.
-- Rendering via `requestAnimationFrame` using `view_json()`.
-
----
-
-## 9) Local Modes
-
-- Vs AI: remote input generated each tick:
-  - `axis_y ≈ clamp((ball_y - paddle_y) * K)`, with small `K`, plus dead zone.
-- Vs Wall: when ball reaches wall side, reflect X as if paddle centered; ignore remote input.
-- Vs Local 2: second keyboard/touch input feeds remote `axis_y`.
-
----
-
-## 10) Defaults
-
-`Config` recommended defaults:
-- `paddle_half_h = FX_ONE / 8`
-- `paddle_speed = (FX_ONE * 3) / 2`  // 1.5 units/s
-- `ball_speed   = FX_ONE / 2`        // 0.5 units/s
-- `ball_speed_up= FX_ONE + (FX_ONE / 20)`  // +5% per paddle hit
-- `wall_thickness = 0`
-- `paddle_x = FX_ONE / 20`  // 5% from edge
-- `max_score = 11`
-- `seed = 0xC0FFEE`
-- `tick_hz = 60`
-
-Buttons:
-- Bit 0 = Ready/Start toggle (optional Lobby→Countdown).
-- Bit 1 = Pause (optional; can be ignored initially).
-
-Rematch:
-- Reset scores, reseed or reuse seed, `reset_for_serve()`.
-
----
-
-## 11) Flows
-
-Pairing (Host/Join):
-- Host: Create Offer → show SDP → paste Answer → on open → `Game`.
-- Join: Paste Offer → Create Answer → show SDP → wait for open → `Game`.
-- Fail or Back returns to `Start`.
-
-Game tick:
-- Read controls → `on_local_input(axis, buttons)`.
-- `tick()` → may step or wait (if remote missing).
-- Render `view`; handle `Event`s (e.g., scored).
-
-Disconnect:
-- If channel closes or times out → return to `Start`.
-
----
-
-## 12) Testing
-
-Core (`pong_core`):
-- Unit tests: paddle/ball collisions, scoring, deterministic serve from seed.
-- Serialization roundtrips: `Input`, `InputPair`, `Snapshot`.
-
-Lockstep:
-- Simulated latency/loss: ensure step only when both inputs exist.
-- Snapshot request/apply restores sync.
-
-Transport:
-- Loopback transport for protocol tests.
-- RTC smoke tests for open/send/receive/close.
-
-Cross‑platform determinism:
-- Scripted inputs produce identical scores/snapshots on native and WASM.
-
----
-
-## 13) Milestones
-
-- M1: `pong_core` with tests; CLI harness (two local inputs).
-- M2: Terminal renderer + input; Local Vs Local2.
-- M3: Web WASM + DOM UI; local modes.
-- M4: WebRTC transports + Host/Join screens; cross‑play.
-- M5: QoL: Rematch, Ready/Countdown, snapshots for resync; mobile controls polish.
-
----
-
-## 14) File Map (minimum)
-
-- `pong_core/src/lib.rs`: `Game`, `Config`, `Input`, `InputPair`, `Snapshot`, `View`, `Event`.
-- `pong_core/src/wasm.rs`: `WasmGame` bridge.
-- `clients/terminal/src/main.rs`: `TerminalApp`, screens, key mapping, render loop.
-- `clients/terminal/src/lockstep.rs`: `Lockstep`, `Transport` trait.
-- `clients/terminal/src/rtc_transport.rs`: `RtcTransport`.
-- `clients/web/index.html`, `clients/web/app.ts`, `clients/web/lockstep.ts`, `clients/web/rtc_transport.ts`.
-
----
-
-## 15) Notes
-
-- Keep all simulation time‑based logic inside `pong_core::step` driven by ticks only.
-- UI layers are free to interpolate for visuals, but must not alter inputs after submission for a tick.
-- Start with reliable/ordered channels; optimize later if needed.
-- Manual SDP exchange is presented as two textareas (Offer/Answer) in both clients.
+**Built with ❤️ in Rust** | [Design Specification](design-spec.md) | [GitHub Repository](https://github.com/asyed94/project-pong)
