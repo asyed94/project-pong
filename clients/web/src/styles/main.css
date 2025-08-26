@@ -1,0 +1,878 @@
+/* Pong Web Client - Clean Terminal Styling */
+
+/* ============================================================================
+   CSS CUSTOM PROPERTIES (VARIABLES)
+   ============================================================================ */
+:root {
+  /* Colors */
+  --color-bg: #000;
+  --color-text-primary: #fff;
+  --color-text-secondary: #808080;
+  --color-accent: #00FFFF;
+  --color-score: #FFFF00;
+  --color-game: #0f0;
+  --color-error: #f00;
+  --color-danger: #FF6B6B;
+
+  /* Spacing */
+  --spacing-xs: 2px;
+  --spacing-sm: 4px;
+  --spacing-md: 8px;
+  --spacing-lg: 10px;
+  --spacing-xl: 12px;
+  --spacing-xxl: 15px;
+  --spacing-xxxl: 20px;
+
+  /* Typography */
+  --font-mono: 'Courier New', 'Monaco', 'Menlo', monospace;
+  --font-size-xs: 0.6em;
+  --font-size-sm: 0.8em;
+  --font-size-md: 0.9em;
+  --font-size-lg: 1.1em;
+  --font-size-xl: 1.3em;
+  --font-size-xxl: 1.5em;
+  --font-size-xxxl: 1.8em;
+
+  /* Layout */
+  --border-width: 2px;
+  --border-radius: 8px;
+  --border-radius-sm: 4px;
+  --max-width: 850px;
+  --touch-zone-width: 80px;
+  --touch-zone-width-sm: 50px;
+  --touch-zone-width-xs: 60px;
+  --fab-size: 50px;
+  --fab-size-sm: 42px;
+
+  /* Viewport handling */
+  --vh: 1vh;
+}
+
+/* ============================================================================
+   BASE STYLES
+   ============================================================================ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-mono);
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  overflow: auto;
+  min-height: 100vh;
+  min-height: 100dvh;
+  min-height: calc(var(--vh) * 100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-lg);
+}
+
+#app {
+  width: 100%;
+  max-width: var(--max-width);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+/* ============================================================================
+   TERMINAL SECTION STYLING
+   ============================================================================ */
+.terminal-section {
+  border: var(--border-width) solid var(--color-accent);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-xl);
+  background-color: var(--color-bg);
+  position: relative;
+}
+
+/* Section Types */
+.title {
+  color: var(--color-accent);
+  font-size: var(--font-size-xxl);
+  text-align: center;
+  font-weight: bold;
+  text-shadow: 0 0 10px var(--color-accent);
+}
+
+.game-info {
+  color: var(--color-score);
+  font-size: var(--font-size-lg);
+  text-align: center;
+  font-weight: bold;
+  text-shadow: 0 0 10px var(--color-score);
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.field {
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1;
+  white-space: pre;
+  text-align: center;
+  min-height: 400px;
+  background-color: var(--color-bg);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.controls {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-md);
+  text-align: center;
+  line-height: 1.4;
+}
+
+.mobile-hint {
+  font-size: var(--font-size-sm);
+  opacity: 0.8;
+}
+
+/* ============================================================================
+   BUTTON STYLES
+   ============================================================================ */
+.fullscreen-button,
+.menu-button {
+  background: var(--color-bg);
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-md);
+  margin-left: var(--spacing-xxl);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.fullscreen-button:hover,
+.menu-button:hover {
+  background: var(--color-accent);
+  color: var(--color-bg);
+  text-shadow: none;
+  box-shadow: 0 0 10px var(--color-accent);
+}
+
+.fullscreen-button:active,
+.menu-button:active {
+  transform: scale(0.95);
+}
+
+/* ============================================================================
+   MODE SELECTION SCREEN
+   ============================================================================ */
+.mode-selection {
+  color: var(--color-text-primary);
+  text-align: center;
+  padding: var(--spacing-xxxl);
+}
+
+.mode-title {
+  font-size: var(--font-size-xl);
+  color: var(--color-accent);
+  font-weight: bold;
+  margin-bottom: var(--spacing-xxxl);
+  text-shadow: 0 0 10px var(--color-accent);
+}
+
+.mode-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xxl);
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.mode-button {
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  border: var(--border-width) solid var(--color-accent);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-xxl);
+  font-family: var(--font-mono);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  text-align: center;
+}
+
+.mode-button:hover {
+  background: var(--color-accent);
+  color: var(--color-bg);
+  text-shadow: none;
+  box-shadow: 0 0 20px var(--color-accent);
+  transform: translateY(-2px);
+}
+
+.mode-button:active {
+  transform: translateY(0);
+  box-shadow: 0 0 10px var(--color-accent);
+}
+
+.mode-icon {
+  font-size: 2em;
+  margin-bottom: 5px;
+}
+
+.mode-name {
+  font-size: var(--font-size-lg);
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.mode-desc {
+  font-size: var(--font-size-md);
+  opacity: 0.8;
+  font-style: italic;
+}
+
+/* ============================================================================
+   GAME OVER SCREEN
+   ============================================================================ */
+.game-over {
+  color: var(--color-text-primary);
+  text-align: center;
+  padding: var(--spacing-xxxl);
+}
+
+.winner-text {
+  font-size: var(--font-size-xxxl);
+  color: var(--color-score);
+  font-weight: bold;
+  margin-bottom: var(--spacing-xxl);
+  text-shadow: 0 0 15px var(--color-score);
+}
+
+.final-score {
+  font-size: var(--font-size-xl);
+  color: var(--color-text-primary);
+  margin-bottom: 25px;
+  text-shadow: 0 0 10px var(--color-text-primary);
+}
+
+.game-over-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xxl);
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+/* ============================================================================
+   MOBILE CONTROLS
+   ============================================================================ */
+.touch-zone {
+  position: fixed;
+  top: 0;
+  width: var(--touch-zone-width);
+  height: 100vh;
+  z-index: 10;
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  display: none;
+}
+
+.left-zone {
+  left: 0;
+}
+
+.right-zone {
+  right: 0;
+}
+
+.touch-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--color-accent);
+  text-shadow: 0 0 10px var(--color-accent);
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.touch-zone.active .touch-indicator {
+  opacity: 1;
+  text-shadow: 0 0 15px var(--color-accent);
+}
+
+.touch-icon {
+  font-size: var(--font-size-xxl);
+  margin-bottom: var(--spacing-sm);
+}
+
+.touch-label {
+  font-family: var(--font-mono);
+  font-size: 1.2em;
+  font-weight: bold;
+  margin-bottom: var(--spacing-sm);
+}
+
+.touch-arrows {
+  font-size: 1.8em;
+  opacity: 0.8;
+}
+
+.touch-zone.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to right, 
+    rgba(0, 255, 255, 0.1) 0%, 
+    rgba(0, 255, 255, 0.05) 50%, 
+    transparent 100%
+  );
+}
+
+.right-zone.active::before {
+  background: linear-gradient(to left, 
+    rgba(0, 255, 255, 0.1) 0%, 
+    rgba(0, 255, 255, 0.05) 50%, 
+    transparent 100%
+  );
+}
+
+/* Mobile FABs */
+.mobile-fab {
+  position: fixed;
+  z-index: 20;
+  background: var(--color-bg);
+  color: var(--color-accent);
+  border: var(--border-width) solid var(--color-accent);
+  border-radius: 50%;
+  font-family: var(--font-mono);
+  font-size: 1.2em;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  transition: all 0.2s ease;
+  text-shadow: 0 0 10px var(--color-accent);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+  display: none;
+  width: var(--fab-size);
+  height: var(--fab-size);
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+}
+
+.mobile-fab:active {
+  transform: scale(0.9);
+  background: var(--color-accent);
+  color: var(--color-bg);
+  text-shadow: none;
+}
+
+.mobile-fab.visible {
+  display: flex;
+}
+
+.fab-ready {
+  bottom: 75px;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: pulse-ready 2s infinite;
+}
+
+.fab-menu {
+  top: var(--spacing-xl);
+  right: 65px;
+  width: var(--fab-size-sm);
+  height: var(--fab-size-sm);
+  font-size: 1em;
+}
+
+.fab-quit {
+  top: var(--spacing-xl);
+  left: 65px;
+  width: var(--fab-size-sm);
+  height: var(--fab-size-sm);
+  font-size: 1em;
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+  text-shadow: 0 0 10px var(--color-danger);
+  box-shadow: 0 0 15px rgba(255, 107, 107, 0.3);
+}
+
+.fab-quit:active {
+  background: var(--color-danger);
+  color: var(--color-bg);
+}
+
+/* ============================================================================
+   GAME ELEMENTS
+   ============================================================================ */
+.paddle,
+.ball {
+  background-color: var(--color-game);
+  position: absolute;
+}
+
+.paddle {
+  box-shadow: 0 0 5px var(--color-game);
+}
+
+.ball {
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--color-game);
+}
+
+.score {
+  color: var(--color-game);
+  font-size: var(--font-size-xxl);
+  text-shadow: 0 0 10px var(--color-game);
+  margin: 0 var(--spacing-xxxl);
+}
+
+/* ============================================================================
+   ERROR STATES
+   ============================================================================ */
+.error {
+  color: var(--color-error);
+  text-shadow: 0 0 10px var(--color-error);
+  border-color: var(--color-error);
+}
+
+.error .field {
+  border-color: var(--color-error);
+  box-shadow: 0 0 20px var(--color-error);
+}
+
+/* ============================================================================
+   ANIMATIONS
+   ============================================================================ */
+.loading {
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0.3; }
+}
+
+@keyframes pulse-ready {
+  0% { 
+    opacity: 0.8;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+  }
+  50% { 
+    opacity: 1;
+    box-shadow: 0 0 25px rgba(0, 255, 255, 0.6);
+  }
+  100% { 
+    opacity: 0.8;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+  }
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+/* Mobile Portrait */
+@media (max-width: 768px) and (orientation: portrait) {
+  body {
+    padding-left: 65px;
+    padding-right: 65px;
+  }
+  
+  #app {
+    padding: var(--spacing-lg);
+    max-width: calc(100vw - 130px);
+  }
+  
+  .field {
+    width: min(calc(100vw - 150px), 500px);
+    height: min(60vh, 333px);
+    font-size: 10px;
+  }
+  
+  .title {
+    font-size: var(--font-size-xl);
+  }
+  
+  .game-info {
+    font-size: 1em;
+  }
+  
+  .controls {
+    font-size: var(--font-size-sm);
+  }
+  
+  .touch-zone {
+    display: block;
+    width: var(--touch-zone-width-xs);
+  }
+  
+  .mode-buttons {
+    max-width: 300px;
+  }
+  
+  .mode-button {
+    padding: var(--spacing-xl);
+  }
+  
+  .mode-icon {
+    font-size: var(--font-size-xxl);
+  }
+  
+  .mode-name {
+    font-size: 1em;
+  }
+  
+  .mode-desc {
+    font-size: var(--font-size-sm);
+  }
+}
+
+/* Small Mobile Portrait */
+@media (max-width: 480px) and (orientation: portrait) {
+  .field {
+    width: min(calc(100vw - 150px), 350px);
+    height: min(50vh, 250px);
+    font-size: 8px;
+  }
+  
+  .title {
+    font-size: var(--font-size-lg);
+  }
+  
+  .game-info {
+    font-size: var(--font-size-md);
+  }
+}
+
+/* Mobile Landscape */
+@media (orientation: landscape) and (max-height: 500px) {
+  body {
+    padding: 0;
+    padding-left: var(--touch-zone-width-sm);
+    padding-right: var(--touch-zone-width-sm);
+    align-items: stretch;
+    justify-content: center;
+    height: calc(var(--vh) * 100);
+    min-height: calc(var(--vh) * 100);
+  }
+  
+  #app {
+    gap: var(--spacing-xs);
+    max-width: calc(100vw - 100px);
+    width: 100%;
+    height: calc(var(--vh) * 100);
+    min-height: calc(var(--vh) * 100);
+    justify-content: flex-start;
+    align-items: stretch;
+    margin: 0;
+  }
+  
+  .terminal-section {
+    padding: 3px;
+    border-width: 1px;
+    margin: 0;
+  }
+  
+  .title {
+    font-size: var(--font-size-md);
+    padding: var(--spacing-xs);
+    flex-shrink: 0;
+    min-height: auto;
+  }
+  
+  .game-info {
+    min-height: 20px;
+    font-size: 0.7em;
+    padding: var(--spacing-xs);
+    flex-shrink: 0;
+  }
+  
+  .field {
+    font-size: 7px;
+    padding: var(--spacing-xs);
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+    overflow: hidden;
+    border-width: 1px;
+  }
+  
+  .controls {
+    font-size: var(--font-size-xs);
+    line-height: 1.0;
+    padding: var(--spacing-xs);
+    flex-shrink: 0;
+  }
+  
+  .mobile-hint {
+    display: inline;
+  }
+  
+  .touch-zone {
+    display: block;
+    width: var(--touch-zone-width-sm);
+    height: 100vh;
+    height: 100dvh;
+  }
+  
+  .fab-ready {
+    bottom: 60px;
+  }
+  
+  .fab-menu,
+  .fab-quit {
+    top: 10px;
+  }
+  
+  .fab-menu {
+    right: 55px;
+  }
+  
+  .fab-quit {
+    left: 55px;
+  }
+  
+  /* Mode selection landscape adjustments */
+  .mode-selection {
+    padding: var(--spacing-lg);
+  }
+  
+  .mode-title {
+    font-size: var(--font-size-lg);
+    margin-bottom: var(--spacing-xxl);
+  }
+  
+  .mode-buttons {
+    flex-direction: row;
+    justify-content: center;
+    max-width: 100%;
+    gap: var(--spacing-lg);
+  }
+  
+  .mode-button {
+    padding: var(--spacing-lg);
+    min-width: 120px;
+    max-width: 150px;
+  }
+  
+  .mode-icon {
+    font-size: 1.2em;
+  }
+  
+  .mode-name {
+    font-size: var(--font-size-md);
+  }
+  
+  .mode-desc {
+    font-size: 0.7em;
+  }
+  
+  .game-over-buttons {
+    flex-direction: row;
+    justify-content: center;
+    max-width: 100%;
+    gap: var(--spacing-lg);
+  }
+  
+  .winner-text {
+    font-size: var(--font-size-xl);
+    margin-bottom: var(--spacing-lg);
+  }
+  
+  .final-score {
+    font-size: var(--font-size-lg);
+    margin-bottom: var(--spacing-xxl);
+  }
+}
+
+/* Show FABs on mobile devices */
+@media (max-width: 768px), (orientation: landscape) and (max-height: 500px) {
+  .mobile-fab.visible {
+    display: flex;
+  }
+}
+
+/* Mobile toggle for desktop */
+.mobile-toggle {
+  display: none;
+}
+
+.mobile-toggle.active {
+  background: var(--color-accent);
+  color: var(--color-bg);
+  text-shadow: none;
+  box-shadow: 0 0 15px var(--color-accent);
+}
+
+@media (min-width: 769px) and (orientation: landscape) and (min-height: 501px) {
+  .mobile-toggle {
+    display: inline-block;
+  }
+}
+
+.desktop-mobile-mode .mobile-fab.visible {
+  display: flex !important;
+}
+
+.desktop-mobile-mode .touch-zone {
+  display: block !important;
+}
+
+/* ============================================================================
+   FULLSCREEN STYLES
+   ============================================================================ */
+:fullscreen #app,
+:-webkit-full-screen #app,
+:-moz-full-screen #app {
+  height: 100vh;
+  height: 100dvh;
+  max-width: 100vw;
+  gap: 3px;
+  margin: 0;
+}
+
+:fullscreen body,
+:-webkit-full-screen body,
+:-moz-full-screen body {
+  padding: var(--spacing-xs);
+  height: 100vh;
+  height: 100dvh;
+}
+
+:fullscreen .terminal-section,
+:-webkit-full-screen .terminal-section,
+:-moz-full-screen .terminal-section {
+  padding: 6px;
+  border-width: 1px;
+}
+
+:fullscreen .title,
+:-webkit-full-screen .title,
+:-moz-full-screen .title {
+  font-size: var(--font-size-lg);
+  padding: 3px;
+}
+
+:fullscreen .game-info,
+:-webkit-full-screen .game-info,
+:-moz-full-screen .game-info {
+  min-height: 30px;
+  font-size: var(--font-size-md);
+  padding: 3px;
+}
+
+:fullscreen .field,
+:-webkit-full-screen .field,
+:-moz-full-screen .field {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  font-size: 10px;
+  padding: 3px;
+}
+
+:fullscreen .controls,
+:-webkit-full-screen .controls,
+:-moz-full-screen .controls {
+  font-size: 0.7em;
+  padding: 3px;
+}
+
+:fullscreen .touch-zone,
+:-webkit-full-screen .touch-zone,
+:-moz-full-screen .touch-zone {
+  display: block !important;
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* Fullscreen mobile landscape optimization */
+@media (orientation: landscape) and (max-height: 500px) {
+  :fullscreen body,
+  :-webkit-full-screen body,
+  :-moz-full-screen body {
+    padding: 0;
+    padding-left: var(--touch-zone-width-sm);
+    padding-right: var(--touch-zone-width-sm);
+    align-items: stretch;
+    justify-content: center;
+  }
+  
+  :fullscreen #app,
+  :-webkit-full-screen #app,
+  :-moz-full-screen #app {
+    gap: 1px;
+    max-width: calc(100vw - 100px);
+    align-items: stretch;
+    justify-content: flex-start;
+  }
+  
+  :fullscreen .terminal-section,
+  :-webkit-full-screen .terminal-section,
+  :-moz-full-screen .terminal-section {
+    padding: var(--spacing-xs);
+    border-width: 1px;
+  }
+  
+  :fullscreen .title,
+  :-webkit-full-screen .title,
+  :-moz-full-screen .title {
+    font-size: var(--font-size-sm);
+    padding: 1px;
+  }
+  
+  :fullscreen .game-info,
+  :-webkit-full-screen .game-info,
+  :-moz-full-screen .game-info {
+    min-height: 18px;
+    font-size: 0.65em;
+    padding: 1px;
+  }
+  
+  :fullscreen .field,
+  :-webkit-full-screen .field,
+  :-moz-full-screen .field {
+    font-size: 6px;
+    padding: 1px;
+  }
+  
+  :fullscreen .controls,
+  :-webkit-full-screen .controls,
+  :-moz-full-screen .controls {
+    font-size: 0.55em;
+    padding: 1px;
+    line-height: 1.0;
+  }
+}
+
+/* ============================================================================
+   SCREEN MANAGEMENT
+   ============================================================================ */
+.screen {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}

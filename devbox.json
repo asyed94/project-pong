@@ -1,6 +1,12 @@
 {
   "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.14.2/.schema/devbox.schema.json",
-  "packages": ["rustup@latest", "libiconv@latest"],
+  "packages": [
+    "rustup@latest",
+    "libiconv@latest",
+    "nodejs@20",
+    "typescript@latest",
+    "wasm-pack@latest"
+  ],
   "shell": {
     "init_hook": [
       "projectDir=$(dirname $(readlink -f \"$0\"))",
@@ -9,12 +15,15 @@
       "export RUSTUP_HOME=$rustupHomeDir",
       "export LIBRARY_PATH=$LIBRARY_PATH:\"$projectDir/nix/profile/default/lib\"",
       "rustup default stable",
+      "rustup target add wasm32-unknown-unknown",
       "cargo fetch"
     ],
     "scripts": {
       "test": "cargo test -- --show-output",
       "start": "cargo run",
-      "build-docs": "cargo doc"
+      "build-docs": "cargo doc",
+      "build-wasm": "wasm-pack build pong_core --target web --out-dir ../clients/web/wasm",
+      "web-dev": "cd clients/web && npm run dev"
     }
   }
 }

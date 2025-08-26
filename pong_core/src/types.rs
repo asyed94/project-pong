@@ -75,7 +75,7 @@ impl Default for Config {
     fn default() -> Self {
         Config {
             paddle_half_h: FX_ONE / 8,             // 1/8 unit = 8192 (exact)
-            paddle_speed: (FX_ONE * 3) / 2,        // 1.5 units/s = 98304 (exact)
+            paddle_speed: FX_ONE * 3,              // 3.0 units/s = 196608 (exact)
             ball_speed: FX_ONE / 2,                // 0.5 units/s = 32768 (exact)
             ball_speed_up: FX_ONE + (FX_ONE / 20), // +5% per hit
             wall_thickness: 0,

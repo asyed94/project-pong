@@ -37,9 +37,9 @@ cargo run --bin cli_harness
 - **Deterministic Physics**: Fixed-point arithmetic ensures identical gameplay across all platforms
 - **Cross-Platform**: Shared Rust core compiles to native and WebAssembly
 - **[TODO] Lockstep Networking**: Synchronized gameplay for lag-free multiplayer experience
-- **Direct P2P**: [TODO] WebRTC DataChannel with manual SDP exchange (no servers required)
-- **Multiple Clients**: Terminal UI and [TODO] planned web interface
-- **Local Modes**: [TODO] Play against AI, wall, or local second player (currently only 2-player local)
+- **[TODO] Direct P2P**: WebRTC DataChannel with manual SDP exchange (no servers required)
+- **Multiple Clients**: Terminal UI and fully functional web interface with mobile support
+- **Local Modes**: Play against AI, wall, or local second player
 - **Serializable State**: Complete game state snapshots for synchronization
 
 ## 🚀 Installation
@@ -82,7 +82,7 @@ cargo install wasm-pack
 
 # Build the WASM module
 cd pong_core
-wasm-pack build --target web --out-dir ../clients/web/pkg
+wasm-pack build --target web --out-dir ../clients/web/wasm
 ```
 
 ## 🎯 Usage
@@ -110,7 +110,7 @@ cargo run --bin terminal-client
 
 - **[TODO] Host**: Create a game and share your SDP offer
 - **[TODO] Join**: Join a game using the host's SDP offer
-- **Local**: Two-player local gameplay (AI and wall modes [TODO])
+- **Local**: Local gameplay with AI, wall, or second player modes
 - **Quit**: Exit the application
 
 ### CLI Harness
@@ -128,19 +128,36 @@ cargo run --bin cli_harness
 # cargo run --bin cli_harness -- --seed 12345 --verify-determinism
 ```
 
-### Web Client [TODO]
+### Web Client
 
-The web client will provide mobile-friendly controls and DOM-based rendering:
+The web client provides a fully functional game experience with mobile-friendly controls and DOM-based rendering:
 
 ```bash
-# [TODO] Build WASM module (web client not implemented)
-# wasm-pack build --target web pong_core
+# Build WASM module
+cd pong_core
+wasm-pack build --target web --out-dir ../clients/web/wasm
 
-# [TODO] Serve the web client (directory doesn't exist)
-# cd clients/web
-# python -m http.server 8080
-# Open http://localhost:8080
+# Install dependencies and run development server
+cd ../clients/web
+npm install
+npm run dev
+
+# Open http://localhost:5173 (or the URL shown by Vite)
 ```
+
+**Web Features:**
+
+- **Mobile Support**: Touch-friendly controls with drag gestures
+- **Local Game Modes**: Play against AI, wall, or local second player
+- **WASM Integration**: Rust core runs natively in the browser
+- **Responsive Design**: Works on desktop and mobile devices
+- **Real-time Rendering**: 60fps game loop with smooth animations
+
+**Controls:**
+
+- **Desktop**: Click and drag to move paddle, spacebar for ready/start
+- **Mobile**: Touch and drag the paddle area, tap ready button
+- **Game Modes**: Select AI, Wall, or Local multiplayer from the menu
 
 ## 🛠 Development
 
@@ -161,13 +178,31 @@ repo/
 │   ├── src/main.rs
 │   └── Cargo.toml
 ├── clients/
-│   └── terminal/          # Terminal UI client
-│       ├── src/
-│       │   ├── main.rs    # Application entry point
-│       │   ├── app.rs     # Application state
-│       │   ├── ui.rs      # TUI rendering
-│       │   └── event.rs   # Input handling
-│       └── Cargo.toml
+│   ├── terminal/          # Terminal UI client
+│   │   ├── src/
+│   │   │   ├── main.rs    # Application entry point
+│   │   │   ├── app.rs     # Application state
+│   │   │   ├── ui.rs      # TUI rendering
+│   │   │   └── event.rs   # Input handling
+│   │   └── Cargo.toml
+│   └── web/               # Web client (TypeScript + WASM)
+│       ├── index.html     # Main HTML entry point
+│       ├── package.json   # Node.js dependencies
+│       ├── vite.config.js # Vite build configuration
+│       ├── tsconfig.json  # TypeScript configuration
+│       ├── wasm/          # Generated WASM files
+│       └── src/
+│           ├── main.ts    # Application entry point
+│           ├── game.ts    # Game loop and state
+│           ├── GameRenderer.ts    # Rendering engine
+│           ├── GameStateManager.ts # State management
+│           ├── InputManager.ts    # Input handling
+│           ├── MobileController.ts # Mobile controls
+│           ├── screens.ts # Screen navigation
+│           ├── ai.ts      # AI opponent logic
+│           ├── types.ts   # TypeScript type definitions
+│           └── styles/
+│               └── main.css # Styling
 ├── Cargo.toml             # Workspace configuration
 └── design-spec.md         # Detailed technical specification
 ```
@@ -560,7 +595,27 @@ impl WasmGame {
     /// Restore from snapshot bytes
     #[wasm_bindgen]
     pub fn restore_bytes(&mut self, bytes: &[u8]);
+
+    /// Reset the game to initial state (for rematch)
+    #[wasm_bindgen]
+    pub fn reset_match(&mut self);
+
+    /// Get the current tick number
+    #[wasm_bindgen]
+    pub fn get_tick(&self) -> u32;
+
+    /// Check if the game is currently active (accepting inputs)
+    #[wasm_bindgen]
+    pub fn is_active(&self) -> bool;
+
+    /// Get a human-readable status string
+    #[wasm_bindgen]
+    pub fn status_string(&self) -> String;
 }
+
+/// Create a default config as JSON string (utility for JavaScript)
+#[wasm_bindgen]
+pub fn default_config_json() -> String;
 ```
 
 ### Usage Examples
@@ -647,13 +702,14 @@ We welcome contributions! Here's how to get started:
 ### Areas for Contribution
 
 - **WebRTC Transport**: Implement P2P networking layer
-- **Web Client**: Complete HTML/JS/WASM frontend
-- **Mobile Controls**: Touch-friendly input for web client
-- **AI Improvements**: Smarter AI opponents
-- **Visual Polish**: Better rendering and effects
-- **Performance**: Optimization and profiling
-- **Documentation**: Code examples and tutorials
-- **Testing**: Additional test coverage
+- **Lockstep Networking**: Synchronization protocol for multiplayer
+- **AI Improvements**: Enhance existing AI opponent intelligence
+- **Visual Polish**: Enhanced rendering effects and animations
+- **Performance**: Optimization and profiling for both native and WASM
+- **Documentation**: Additional code examples and tutorials
+- **Testing**: Expanded test coverage, especially integration tests
+- **Mobile UX**: Further mobile experience improvements
+- **Accessibility**: Screen reader support and keyboard navigation
 
 ### Code Review Guidelines
 
@@ -676,21 +732,28 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🎯 Roadmap
 
-### Current Status (M1)
+### Current Status - Completed ✅
 
-- ✅ Core deterministic physics engine
-- ✅ Fixed-point mathematics system
-- ✅ Terminal client with TUI
-- ✅ CLI testing harness
-- ✅ Comprehensive test suite
+- ✅ **M1**: Core deterministic physics engine
+- ✅ **M1**: Fixed-point mathematics system
+- ✅ **M1**: Terminal client with TUI
+- ✅ **M1**: CLI testing harness
+- ✅ **M1**: Comprehensive test suite
+- ✅ **M2**: Web client with WASM integration
+- ✅ **M2**: TypeScript/Vite build system
+- ✅ **M3**: Mobile-friendly touch controls
+- ✅ **M3**: Responsive web design
+- ✅ **M4**: AI opponent implementation
+- ✅ **M4**: Local game modes (AI, wall, multiplayer)
 
-### Planned Features
+### In Progress / Planned Features
 
-- **M2**: WebRTC transport implementation
-- **M3**: Web client with WASM integration
-- **M4**: Mobile-friendly controls
-- **M5**: Enhanced AI and game modes
+- **M5**: WebRTC transport implementation ([TODO])
+- **M5**: Lockstep networking protocol ([TODO])
+- **M5**: P2P connectivity and signaling ([TODO])
 - **M6**: Spectator mode and replays
+- **M7**: Enhanced visual effects and animations
+- **M8**: Performance optimizations and profiling
 
 ### Long-term Goals
 

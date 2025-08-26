@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🏓 Pong Web Client</title>
+  <link rel="stylesheet" href="/src/styles/main.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Mode Selection Screen -->
+    <div id="mode-select-screen" class="screen">
+      <div id="title-section" class="terminal-section title">
+        🏓 Pong Web Client 🏓
+      </div>
+      
+      <div class="terminal-section mode-selection">
+        <div class="mode-title">Select Game Mode:</div>
+        
+        <div class="mode-buttons">
+          <button id="btn-vs-local2" class="mode-button">
+            <div class="mode-icon">👥</div>
+            <div class="mode-name">VS LOCAL 2P</div>
+            <div class="mode-desc">Two players, same device</div>
+          </button>
+          
+          <button id="btn-vs-ai" class="mode-button">
+            <div class="mode-icon">🤖</div>
+            <div class="mode-name">VS AI</div>
+            <div class="mode-desc">Play against computer</div>
+          </button>
+          
+          <button id="btn-vs-wall" class="mode-button">
+            <div class="mode-icon">🧱</div>
+            <div class="mode-name">VS WALL</div>
+            <div class="mode-desc">Solo practice mode</div>
+          </button>
+        </div>
+      </div>
+      
+      <div class="terminal-section controls">
+        Select a mode to start playing  •  
+        <button id="fullscreen-btn" class="fullscreen-button">⛶ Fullscreen</button>
+      </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="screen" style="display: none;">
+      <!-- Game Info Bar - Score, Status, Tick -->
+      <div id="game-info" class="terminal-section game-info">
+        Score: 0 - 0    Status: Loading...    Tick: 0
+      </div>
+      
+      <!-- Game Field - ASCII field content -->
+      <div id="field" class="terminal-section field">
+        Loading game...
+      </div>
+      
+      <!-- Controls Section - Input instructions -->
+      <div id="controls" class="terminal-section controls">
+        <span id="control-text">P1: W/S (up/down)  P2: ↑/↓ (up/down)  SPACE: Ready  ESC: Menu  Q: Quit</span>
+        <button id="back-to-menu-btn" class="menu-button">← Back to Menu</button>
+        <button id="mobile-mode-toggle" class="menu-button mobile-toggle">📱 Mobile Mode</button>
+        <br>
+        <span class="mobile-hint">Mobile: Touch and drag in thumb zones to control paddles</span>
+      </div>
+      
+      <!-- Mobile Touch Zones -->
+      <div id="left-touch-zone" class="touch-zone left-zone">
+        <div class="touch-indicator">
+          <span class="touch-icon">🎮</span>
+          <span class="touch-label">L</span>
+          <div class="touch-arrows">↕</div>
+        </div>
+      </div>
+      <div id="right-touch-zone" class="touch-zone right-zone">
+        <div class="touch-indicator">
+          <span class="touch-icon">🎮</span>
+          <span class="touch-label">R</span>
+          <div class="touch-arrows">↕</div>
+        </div>
+      </div>
+      
+      <!-- Mobile Floating Action Buttons -->
+      <button id="fab-ready" class="mobile-fab fab-ready" title="Ready / Start">
+        ▶
+      </button>
+      <button id="fab-menu" class="mobile-fab fab-menu" title="Menu">
+        ☰
+      </button>
+      <button id="fab-quit" class="mobile-fab fab-quit" title="Quit">
+        ✕
+      </button>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over-screen" class="screen" style="display: none;">
+      <div id="title-section" class="terminal-section title">
+        🏆 Game Over! 🏆
+      </div>
+      
+      <div class="terminal-section game-over">
+        <div id="winner-text" class="winner-text">Player 1 Wins!</div>
+        <div id="final-score" class="final-score">Final Score: 11 - 7</div>
+        
+        <div class="game-over-buttons">
+          <button id="btn-rematch" class="mode-button">
+            <div class="mode-icon">🔄</div>
+            <div class="mode-name">REMATCH</div>
+            <div class="mode-desc">Play again with same mode</div>
+          </button>
+          
+          <button id="btn-back-to-menu" class="mode-button">
+            <div class="mode-icon">📋</div>
+            <div class="mode-name">MENU</div>
+            <div class="mode-desc">Choose different mode</div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
